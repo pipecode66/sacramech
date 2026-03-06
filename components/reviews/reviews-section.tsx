@@ -1,6 +1,6 @@
 "use client"
 
-import { type FormEvent, useEffect, useState } from "react"
+import { type FormEvent, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,17 +11,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { MessageSquareQuote, Loader2, ShieldCheck } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
+import type { ApprovedReviewsPayload } from "@/lib/review-service"
 import { REVIEW_SERVICE_OPTIONS, getReviewServiceLabel, type PublicReview } from "@/lib/reviews"
 import { RatingStars } from "./rating-stars"
 
 const PAGE_SIZE = 6
-
-interface ReviewResponse {
-  reviews: PublicReview[]
-  averageRating: number
-  totalApproved: number
-  hasMore: boolean
-}
 
 const initialForm = {
   reviewerName: "",
@@ -31,13 +25,17 @@ const initialForm = {
   serviceType: "",
 }
 
-export function ReviewsSection() {
+interface ReviewsSectionProps {
+  initialData: ApprovedReviewsPayload
+}
+
+export function ReviewsSection({ initialData }: ReviewsSectionProps) {
   const { locale, t } = useI18n()
-  const [reviews, setReviews] = useState<PublicReview[]>([])
-  const [averageRating, setAverageRating] = useState(0)
-  const [totalApproved, setTotalApproved] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [reviews, setReviews] = useState<PublicReview[]>(initialData.reviews)
+  const [averageRating, setAverageRating] = useState(initialData.averageRating)
+  const [totalApproved, setTotalApproved] = useState(initialData.totalApproved)
+  const [hasMore, setHasMore] = useState(initialData.hasMore)
+  const [isLoading] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadError, setLoadError] = useState("")
@@ -52,8 +50,9 @@ export function ReviewsSection() {
   })
 
   const loadReviews = async (offset = 0, append = false) => {
-    const setLoadingState = append ? setIsLoadingMore : setIsLoading
-    setLoadingState(true)
+    if (append) {
+      setIsLoadingMore(true)
+    }
 
     try {
       const response = await fetch(`/api/reviews?limit=${PAGE_SIZE}&offset=${offset}`, {
@@ -64,7 +63,7 @@ export function ReviewsSection() {
         throw new Error("Failed to load reviews")
       }
 
-      const data = (await response.json()) as ReviewResponse
+      const data = (await response.json()) as ApprovedReviewsPayload
       setReviews((currentReviews) => (append ? [...currentReviews, ...data.reviews] : data.reviews))
       setAverageRating(data.averageRating)
       setTotalApproved(data.totalApproved)
@@ -74,13 +73,11 @@ export function ReviewsSection() {
       console.error("Error fetching reviews:", error)
       setLoadError(t("reviews.loadError"))
     } finally {
-      setLoadingState(false)
+      if (append) {
+        setIsLoadingMore(false)
+      }
     }
   }
-
-  useEffect(() => {
-    void loadReviews()
-  }, [])
 
   const handleFormChange = (field: keyof typeof initialForm, value: string | number) => {
     setForm((currentForm) => ({
@@ -120,7 +117,10 @@ export function ReviewsSection() {
   }
 
   return (
-    <section className="border-t border-border/60 bg-[linear-gradient(180deg,rgba(6,54,124,0.03),rgba(255,255,255,0))] py-20">
+    <section
+      id="reviews"
+      className="border-t border-border/60 bg-[linear-gradient(180deg,rgba(6,54,124,0.03),rgba(255,255,255,0))] py-20"
+    >
       <div className="container mx-auto px-4">
         <div className="mb-10 max-w-2xl">
           <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/10">

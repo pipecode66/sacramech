@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { getApprovedReviews } from "@/lib/review-service"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 import { REVIEW_SERVICE_OPTIONS } from "@/lib/reviews"
 
@@ -30,34 +31,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const limit = Math.min(getPaginationValue(searchParams.get("limit"), 6), 12)
     const offset = getPaginationValue(searchParams.get("offset"), 0)
-    const supabaseAdmin = getSupabaseAdminClient()
-
-    const [{ data: reviews, count, error }, { data: approvedRatings, error: ratingError }] = await Promise.all([
-      supabaseAdmin
-        .from("reviews")
-        .select("id, reviewer_name, rating, comment, service_type, created_at", { count: "exact" })
-        .eq("status", "approved")
-        .order("approved_at", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false })
-        .range(offset, offset + limit - 1),
-      supabaseAdmin.from("reviews").select("rating").eq("status", "approved"),
-    ])
-
-    if (error || ratingError) {
-      throw error || ratingError
-    }
-
-    const totalApproved = count || 0
-    const averageRating = approvedRatings?.length
-      ? approvedRatings.reduce((sum, review) => sum + review.rating, 0) / approvedRatings.length
-      : 0
-
-    return NextResponse.json({
-      reviews: reviews || [],
-      averageRating: Number(averageRating.toFixed(1)),
-      totalApproved,
-      hasMore: offset + (reviews?.length || 0) < totalApproved,
-    })
+    return NextResponse.json(await getApprovedReviews(limit, offset))
   } catch (error) {
     console.error("Error loading reviews:", error)
     return NextResponse.json({ error: "Unable to load reviews" }, { status: 500 })
