@@ -23,9 +23,11 @@ Create a local `.env` file with:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+VEHICLE_REGISTRATION_API_USERNAME=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is required for the review API and moderation actions.
+`VEHICLE_REGISTRATION_API_USERNAME` enables automatic plate lookups for California license plates.
 
 ## Development
 
