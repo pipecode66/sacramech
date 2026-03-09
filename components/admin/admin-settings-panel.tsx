@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MapPin, Users, Plus, X, CheckCircle2, Loader2 } from "lucide-react"
 import { SACRAMENTO_ZIP_CODES } from "@/lib/sacramento-zip-codes"
 import { useI18n } from "@/lib/i18n"
@@ -25,6 +26,20 @@ interface AdminSettingsPanelProps {
   technicians: Technician[]
 }
 
+const COUNTRY_PREFIX_OPTIONS = [
+  { value: "+1", label: "🇺🇸 +1 (US/CA)" },
+  { value: "+57", label: "🇨🇴 +57 (Colombia)" },
+  { value: "+52", label: "🇲🇽 +52 (Mexico)" },
+  { value: "+34", label: "🇪🇸 +34 (Spain)" },
+  { value: "+44", label: "🇬🇧 +44 (UK)" },
+  { value: "+49", label: "🇩🇪 +49 (Germany)" },
+  { value: "+33", label: "🇫🇷 +33 (France)" },
+  { value: "+54", label: "🇦🇷 +54 (Argentina)" },
+  { value: "+55", label: "🇧🇷 +55 (Brazil)" },
+  { value: "+56", label: "🇨🇱 +56 (Chile)" },
+  { value: "+51", label: "🇵🇪 +51 (Peru)" },
+]
+
 export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSettingsPanelProps) {
   const { t } = useI18n()
   const router = useRouter()
@@ -39,6 +54,7 @@ export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSet
   const [technicians, setTechnicians] = useState<Technician[]>(initialTechnicians)
   const [newTechName, setNewTechName] = useState("")
   const [newTechArea, setNewTechArea] = useState("")
+  const [newTechCountryCode, setNewTechCountryCode] = useState("+1")
   const [newTechPhone, setNewTechPhone] = useState("")
   const [newTechJoinDate, setNewTechJoinDate] = useState("")
   const [techAdded, setTechAdded] = useState(false)
@@ -81,6 +97,7 @@ export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSet
     const result = await createTechnician({
       name: newTechName,
       area: newTechArea,
+      countryCode: newTechCountryCode,
       phone: newTechPhone,
       joinDate: newTechJoinDate,
     })
@@ -196,7 +213,7 @@ export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSet
           <CardDescription>{t("admin.settings.techDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Input
               placeholder={t("admin.settings.techPlaceholder")}
               value={newTechName}
@@ -209,12 +226,26 @@ export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSet
               onChange={(e) => setNewTechArea(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddTech()}
             />
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[220px,1fr]">
+            <Select value={newTechCountryCode} onValueChange={setNewTechCountryCode}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRY_PREFIX_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input
-              placeholder={t("admin.settings.phoneNumber")}
+              placeholder="Local number (without country code)"
               value={newTechPhone}
-              onChange={(e) => setNewTechPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              onChange={(e) => setNewTechPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
               onKeyDown={(e) => e.key === "Enter" && handleAddTech()}
-              maxLength={10}
+              maxLength={15}
             />
           </div>
           <div className="flex gap-2">

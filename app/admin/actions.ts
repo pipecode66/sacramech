@@ -123,6 +123,7 @@ interface CreateTechnicianInput {
   name: string
   area?: string
   phone?: string
+  countryCode?: string
   joinDate?: string
 }
 
@@ -176,6 +177,41 @@ function buildMechanicAssignmentSms(appointment: {
   ].filter(Boolean)
 
   return lines.join("\n")
+}
+
+function normalizePhoneToE164(rawPhone: string, countryCode?: string): string | null {
+  const phone = rawPhone.trim()
+  const country = (countryCode || "").trim()
+  if (!phone) return null
+
+  if (phone.startsWith("+")) {
+    const internationalDigits = phone.replace(/\D/g, "")
+    if (internationalDigits.length >= 8 && internationalDigits.length <= 15) {
+      return `+${internationalDigits}`
+    }
+  }
+
+  const localDigits = phone.replace(/\D/g, "")
+  const normalizedLocalDigits = localDigits.replace(/^0+/, "")
+  if (!normalizedLocalDigits) return null
+
+  const countryDigits = country.replace(/\D/g, "")
+  if (countryDigits) {
+    const fullNumber = `${countryDigits}${normalizedLocalDigits}`
+    if (fullNumber.length >= 8 && fullNumber.length <= 15) {
+      return `+${fullNumber}`
+    }
+  }
+
+  if (normalizedLocalDigits.length === 10) {
+    return `+1${normalizedLocalDigits}`
+  }
+
+  if (normalizedLocalDigits.length === 11 && normalizedLocalDigits.startsWith("1")) {
+    return `+${normalizedLocalDigits}`
+  }
+
+  return null
 }
 
 export async function sendMechanicAssignmentSms({
@@ -236,7 +272,7 @@ export async function sendMechanicAssignmentSms({
   }
 }
 
-export async function createTechnician({ name, area, phone, joinDate }: CreateTechnicianInput) {
+export async function createTechnician({ name, area, phone, countryCode, joinDate }: CreateTechnicianInput) {
   const session = await getAdminSession()
   if (!session) {
     return { error: "Unauthorized" }
@@ -244,15 +280,15 @@ export async function createTechnician({ name, area, phone, joinDate }: CreateTe
 
   const cleanName = name.trim()
   const cleanArea = area?.trim() || "General"
-  const cleanPhone = (phone || "").replace(/\D/g, "")
+  const normalizedPhone = normalizePhoneToE164(phone || "", countryCode)
   const cleanJoinDate = joinDate?.trim() || null
 
   if (!cleanName) {
     return { error: "Technician name is required." }
   }
 
-  if (cleanPhone.length < 10) {
-    return { error: "A valid phone number is required to send SMS assignments." }
+  if (!normalizedPhone) {
+    return { error: "A valid international phone number is required for SMS assignments." }
   }
 
   const supabase = await getSupabaseServerClient()
@@ -262,7 +298,7 @@ export async function createTechnician({ name, area, phone, joinDate }: CreateTe
     .insert({
       name: cleanName,
       area: cleanArea,
-      phone: cleanPhone,
+      phone: normalizedPhone,
       join_date: cleanJoinDate,
       availability: "available",
       specialties: [],
