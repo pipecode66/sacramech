@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { MapPin, ArrowLeft, Check, AlertCircle } from "lucide-react"
+import { MapPin, ArrowLeft, Check, AlertCircle, MessageSquare } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 
 interface MapConfirmationStepProps {
@@ -51,15 +51,28 @@ export function MapConfirmationStep({ address, onConfirm, onBack }: MapConfirmat
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="additionalInfo">{t("map.additionalInfo")}</Label>
+        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/10 p-4 shadow-sm sm:p-5">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary sm:h-11 sm:w-11">
+              <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="additionalInfo" className="block text-base font-semibold text-foreground sm:text-lg">
+                {t("map.additionalInfo")}
+              </Label>
+              <p className="text-sm leading-5 text-muted-foreground sm:text-[15px]">
+                {t("map.additionalInfoPlaceholder")}
+              </p>
+            </div>
+          </div>
+
           <Textarea
             id="additionalInfo"
             placeholder={t("map.additionalInfoPlaceholder")}
             value={additionalInfo}
             onChange={(e) => setAdditionalInfo(e.target.value)}
-            rows={3}
-            className="resize-none"
+            rows={4}
+            className="min-h-[130px] resize-none rounded-xl border-2 border-primary/15 bg-background/95 px-4 py-3 text-sm leading-6 shadow-inner transition-[border-color,box-shadow] placeholder:text-muted-foreground/80 focus-visible:border-primary/35 focus-visible:ring-primary/20 sm:min-h-[150px] sm:text-base"
           />
         </div>
 
