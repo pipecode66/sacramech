@@ -55,5 +55,7 @@ pnpm build
 
 ## Database
 
-Use the SQL scripts in `scripts/` to create or update the Supabase schema. The reviews module depends on `scripts/005-create-reviews-table.sql` or the updated `scripts/004-full-setup.sql`.
+Use the SQL scripts in `scripts/` to create or update the Supabase schema.
+- Reviews depend on `scripts/005-create-reviews-table.sql` (or the updated `scripts/004-full-setup.sql`).
+- Persistent mechanic settings/assignments depend on `scripts/007-create-technicians-table.sql` (or the updated `scripts/004-full-setup.sql`).
 

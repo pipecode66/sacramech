@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -47,57 +47,6 @@ const serviceAreaMap: Record<string, string> = {
   "95630": "Folsom",
 }
 
-const exampleMechanics = [
-  {
-    id: "m1",
-    name: "Carlos Rodriguez",
-    serviceArea: "Central Sacramento",
-    phone: "(916) 555-0101",
-    availability: "available",
-    specialties: ["Oil Change", "Battery", "Brakes"],
-  },
-  {
-    id: "m2",
-    name: "Miguel Hernandez",
-    serviceArea: "East Sacramento",
-    phone: "(916) 555-0102",
-    availability: "available",
-    specialties: ["Engine Repair", "Diagnostics", "A/C"],
-  },
-  {
-    id: "m3",
-    name: "Juan Garcia",
-    serviceArea: "South Sacramento",
-    phone: "(916) 555-0103",
-    availability: "available",
-    specialties: ["Tire Service", "Maintenance", "General Repairs"],
-  },
-  {
-    id: "m4",
-    name: "Pedro Lopez",
-    serviceArea: "North Sacramento",
-    phone: "(916) 555-0104",
-    availability: "busy",
-    specialties: ["Oil Change", "Diagnostics"],
-  },
-  {
-    id: "m5",
-    name: "David Morales",
-    serviceArea: "West Sacramento",
-    phone: "(916) 555-0105",
-    availability: "available",
-    specialties: ["Engine Repair", "Oil Change", "Brakes"],
-  },
-  {
-    id: "m6",
-    name: "Robert Chen",
-    serviceArea: "East Sacramento",
-    phone: "(916) 555-0106",
-    availability: "available",
-    specialties: ["A/C Repair", "Diagnostics", "Electrical"],
-  },
-]
-
 interface Appointment {
   id: string
   customer_name?: string
@@ -110,8 +59,19 @@ interface Appointment {
   assigned_mechanic?: string
 }
 
+interface Technician {
+  id: string
+  name: string
+  area: string
+  phone: string | null
+  join_date: string | null
+  availability?: string | null
+  specialties?: string[] | null
+}
+
 interface MechanicAssignmentPanelProps {
   appointments: Appointment[]
+  technicians: Technician[]
   onAssignMechanic?: (appointmentId: string, mechanicId: string) => void
 }
 
@@ -122,19 +82,24 @@ interface SmsFeedback {
 
 export function MechanicAssignmentPanel({
   appointments,
+  technicians,
   onAssignMechanic,
 }: MechanicAssignmentPanelProps) {
   const { t } = useI18n()
   const router = useRouter()
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null)
-  const [assignedMechanics, setAssignedMechanics] = useState<Record<string, string>>(() => {
+  const [assignedMechanics, setAssignedMechanics] = useState<Record<string, string>>({})
+  const [isSendingSms, setIsSendingSms] = useState(false)
+  const [smsFeedback, setSmsFeedback] = useState<SmsFeedback | null>(null)
+
+  useEffect(() => {
     const initialAssignments: Record<string, string> = {}
 
     appointments.forEach((appointment) => {
       if (!appointment.assigned_mechanic) return
 
-      const byId = exampleMechanics.find((mechanic) => mechanic.id === appointment.assigned_mechanic)
-      const byName = exampleMechanics.find((mechanic) => mechanic.name === appointment.assigned_mechanic)
+      const byId = technicians.find((mechanic) => mechanic.id === appointment.assigned_mechanic)
+      const byName = technicians.find((mechanic) => mechanic.name === appointment.assigned_mechanic)
       const matchedMechanic = byId || byName
 
       if (matchedMechanic) {
@@ -142,10 +107,8 @@ export function MechanicAssignmentPanel({
       }
     })
 
-    return initialAssignments
-  })
-  const [isSendingSms, setIsSendingSms] = useState(false)
-  const [smsFeedback, setSmsFeedback] = useState<SmsFeedback | null>(null)
+    setAssignedMechanics(initialAssignments)
+  }, [appointments, technicians])
 
   const pendingAppointments = appointments.filter((appointment) => appointment.status === "pending")
 
@@ -159,8 +122,9 @@ export function MechanicAssignmentPanel({
   }
 
   const getAvailableMechanics = (zipCode?: string) => {
-    const serviceArea = zipCode ? serviceAreaMap[zipCode] : "Central Sacramento"
-    return exampleMechanics.filter((mechanic) => mechanic.serviceArea === serviceArea)
+    const serviceArea = (zipCode ? serviceAreaMap[zipCode] : "") || "Central Sacramento"
+    const normalizedServiceArea = serviceArea.trim().toLowerCase()
+    return technicians.filter((mechanic) => mechanic.area.trim().toLowerCase() === normalizedServiceArea)
   }
 
   const currentAppointment = pendingAppointments.find((appointment) => appointment.id === selectedAppointment)
@@ -189,7 +153,7 @@ export function MechanicAssignmentPanel({
       appointmentId: selectedAppointment,
       mechanicId: selectedMechanic.id,
       mechanicName: selectedMechanic.name,
-      mechanicPhone: selectedMechanic.phone,
+      mechanicPhone: selectedMechanic.phone || "",
     })
 
     if (result.success) {
@@ -257,7 +221,7 @@ export function MechanicAssignmentPanel({
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{appointmentCustomerName || t("assign.unknown")}</p>
                       <p className="text-xs text-muted-foreground">
-                        {appointment.service_type} • {appointment.zip_code}
+                        {appointment.service_type} | {appointment.zip_code}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {formatLocalDate(appointment.appointment_date)}
@@ -333,22 +297,24 @@ export function MechanicAssignmentPanel({
                       <div className="flex-1">
                         <p className="font-medium">{mechanic.name}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{mechanic.phone}</p>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {mechanic.specialties.map((specialty) => (
-                            <Badge key={specialty} variant="outline" className="text-xs">
-                              {specialty}
-                            </Badge>
-                          ))}
-                        </div>
+                        {(mechanic.specialties || []).length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {(mechanic.specialties || []).map((specialty) => (
+                              <Badge key={specialty} variant="outline" className="text-xs">
+                                {specialty}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <Badge
                         className={
-                          mechanic.availability === "available"
+                          (mechanic.availability || "available") === "available"
                             ? "bg-green-600"
                             : "bg-yellow-600"
                         }
                       >
-                        {mechanic.availability === "available" ? t("assign.available") : t("assign.busy")}
+                        {(mechanic.availability || "available") === "available" ? t("assign.available") : t("assign.busy")}
                       </Badge>
                     </div>
                   </div>
@@ -402,4 +368,3 @@ export function MechanicAssignmentPanel({
     </div>
   )
 }
-

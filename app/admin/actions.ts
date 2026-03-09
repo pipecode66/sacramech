@@ -119,6 +119,13 @@ interface SendMechanicAssignmentSmsInput {
   mechanicPhone: string
 }
 
+interface CreateTechnicianInput {
+  name: string
+  area?: string
+  phone?: string
+  joinDate?: string
+}
+
 function formatTimeSlot(time?: string | null) {
   if (!time) return ""
 
@@ -214,7 +221,7 @@ export async function sendMechanicAssignmentSms({
 
   const { error: updateError } = await supabase
     .from("appointments")
-    .update({ assigned_mechanic: mechanicName })
+    .update({ assigned_mechanic: mechanicId || mechanicName })
     .eq("id", appointmentId)
 
   if (updateError) {
@@ -227,6 +234,73 @@ export async function sendMechanicAssignmentSms({
     sid: smsResult.sid,
     status: smsResult.status,
   }
+}
+
+export async function createTechnician({ name, area, phone, joinDate }: CreateTechnicianInput) {
+  const session = await getAdminSession()
+  if (!session) {
+    return { error: "Unauthorized" }
+  }
+
+  const cleanName = name.trim()
+  const cleanArea = area?.trim() || "General"
+  const cleanPhone = (phone || "").replace(/\D/g, "")
+  const cleanJoinDate = joinDate?.trim() || null
+
+  if (!cleanName) {
+    return { error: "Technician name is required." }
+  }
+
+  if (cleanPhone.length < 10) {
+    return { error: "A valid phone number is required to send SMS assignments." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+
+  const { data, error } = await supabase
+    .from("technicians")
+    .insert({
+      name: cleanName,
+      area: cleanArea,
+      phone: cleanPhone,
+      join_date: cleanJoinDate,
+      availability: "available",
+      specialties: [],
+    })
+    .select("id, name, area, phone, join_date, availability, specialties, created_at")
+    .single()
+
+  if (error || !data) {
+    return { error: "Failed to add technician." }
+  }
+
+  revalidatePath("/admin/dashboard")
+  return { success: true, technician: data }
+}
+
+export async function deleteTechnician(technicianId: string) {
+  const session = await getAdminSession()
+  if (!session) {
+    return { error: "Unauthorized" }
+  }
+
+  if (!technicianId) {
+    return { error: "Technician id is required." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+
+  const { error } = await supabase
+    .from("technicians")
+    .delete()
+    .eq("id", technicianId)
+
+  if (error) {
+    return { error: "Failed to delete technician." }
+  }
+
+  revalidatePath("/admin/dashboard")
+  return { success: true }
 }
 
 export async function updateReviewStatus(reviewId: string, status: ReviewStatus) {

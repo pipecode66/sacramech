@@ -1,43 +1,54 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Users, Plus, X, CheckCircle2 } from "lucide-react"
+import { MapPin, Users, Plus, X, CheckCircle2, Loader2 } from "lucide-react"
 import { SACRAMENTO_ZIP_CODES } from "@/lib/sacramento-zip-codes"
 import { useI18n } from "@/lib/i18n"
+import { createTechnician, deleteTechnician } from "@/app/admin/actions"
 
-// Initial technician list (mirrored from mechanic-assignment-panel)
-const defaultTechnicians = [
-  { id: "m1", name: "Carlos Rodríguez", area: "Central Sacramento", phone: "", joinDate: "" },
-  { id: "m2", name: "Miguel Hernández", area: "East Sacramento", phone: "", joinDate: "" },
-  { id: "m3", name: "Juan García", area: "South Sacramento", phone: "", joinDate: "" },
-  { id: "m4", name: "Pedro López", area: "North Sacramento", phone: "", joinDate: "" },
-  { id: "m5", name: "David Morales", area: "West Sacramento", phone: "", joinDate: "" },
-  { id: "m6", name: "Robert Chen", area: "East Sacramento", phone: "", joinDate: "" },
-  { id: "m7", name: "Antonio Flores", area: "Southeast Sacramento (Elk Grove)", phone: "", joinDate: "" },
-  { id: "m8", name: "Luis Sanchez", area: "Northeast Sacramento (Citrus Heights)", phone: "", joinDate: "" },
-]
+interface Technician {
+  id: string
+  name: string
+  area: string
+  phone: string | null
+  join_date: string | null
+  availability?: string | null
+  specialties?: string[] | null
+}
 
-export function AdminSettingsPanel() {
+interface AdminSettingsPanelProps {
+  technicians: Technician[]
+}
+
+export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSettingsPanelProps) {
   const { t } = useI18n()
+  const router = useRouter()
 
-  // ZIP codes state – start from the imported list
+  // ZIP codes state - start from the imported list
   const [zipCodes, setZipCodes] = useState<string[]>([...SACRAMENTO_ZIP_CODES])
   const [newZip, setNewZip] = useState("")
   const [zipAdded, setZipAdded] = useState(false)
   const [zipError, setZipError] = useState("")
 
   // Technicians state
-  const [technicians, setTechnicians] = useState(defaultTechnicians)
+  const [technicians, setTechnicians] = useState<Technician[]>(initialTechnicians)
   const [newTechName, setNewTechName] = useState("")
   const [newTechArea, setNewTechArea] = useState("")
   const [newTechPhone, setNewTechPhone] = useState("")
   const [newTechJoinDate, setNewTechJoinDate] = useState("")
   const [techAdded, setTechAdded] = useState(false)
+  const [techError, setTechError] = useState("")
+  const [isSavingTech, setIsSavingTech] = useState(false)
+  const [deletingTechId, setDeletingTechId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setTechnicians(initialTechnicians)
+  }, [initialTechnicians])
 
   const handleAddZip = () => {
     const clean = newZip.trim()
@@ -61,23 +72,55 @@ export function AdminSettingsPanel() {
     setZipCodes((prev) => prev.filter((z) => z !== zip))
   }
 
-  const handleAddTech = () => {
-    if (!newTechName.trim()) return
-    const id = `t${Date.now()}`
-    setTechnicians((prev) => [
-      ...prev,
-      { id, name: newTechName.trim(), area: newTechArea.trim() || "General", phone: newTechPhone.trim() || "", joinDate: newTechJoinDate || "" },
-    ])
+  const handleAddTech = async () => {
+    if (!newTechName.trim() || isSavingTech) return
+
+    setTechError("")
+    setIsSavingTech(true)
+
+    const result = await createTechnician({
+      name: newTechName,
+      area: newTechArea,
+      phone: newTechPhone,
+      joinDate: newTechJoinDate,
+    })
+
+    if (result.error || !result.success || !result.technician) {
+      setTechError(result.error || "Could not add technician.")
+      setIsSavingTech(false)
+      return
+    }
+
+    setTechnicians((prev) =>
+      [...prev, result.technician].sort((a, b) => a.name.localeCompare(b.name))
+    )
     setNewTechName("")
     setNewTechArea("")
     setNewTechPhone("")
     setNewTechJoinDate("")
     setTechAdded(true)
     setTimeout(() => setTechAdded(false), 3000)
+    setIsSavingTech(false)
+    router.refresh()
   }
 
-  const handleRemoveTech = (id: string) => {
-    setTechnicians((prev) => prev.filter((t) => t.id !== id))
+  const handleRemoveTech = async (id: string) => {
+    if (deletingTechId) return
+
+    setTechError("")
+    setDeletingTechId(id)
+
+    const result = await deleteTechnician(id)
+
+    if (result.error) {
+      setTechError(result.error)
+      setDeletingTechId(null)
+      return
+    }
+
+    setTechnicians((prev) => prev.filter((tech) => tech.id !== id))
+    setDeletingTechId(null)
+    router.refresh()
   }
 
   return (
@@ -86,7 +129,7 @@ export function AdminSettingsPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MapPin className="w-5 h-5" />
+            <MapPin className="h-5 w-5" />
             {t("admin.settings.zipTitle")}
           </CardTitle>
           <CardDescription>{t("admin.settings.zipDesc")}</CardDescription>
@@ -105,7 +148,7 @@ export function AdminSettingsPanel() {
               onKeyDown={(e) => e.key === "Enter" && handleAddZip()}
             />
             <Button onClick={handleAddZip} disabled={!newZip.trim()}>
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="mr-1 h-4 w-4" />
               {t("admin.settings.zipAdd")}
             </Button>
           </div>
@@ -115,26 +158,26 @@ export function AdminSettingsPanel() {
           )}
 
           {zipAdded && (
-            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded-lg">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 rounded-lg bg-green-50 p-2 text-sm text-green-700">
+              <CheckCircle2 className="h-4 w-4" />
               {t("admin.settings.zipAdded")}
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto p-1">
-            {zipCodes.sort((a, b) => parseInt(a) - parseInt(b)).map((zip) => (
+          <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto p-1">
+            {[...zipCodes].sort((a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10)).map((zip) => (
               <Badge
                 key={zip}
                 variant="outline"
-                className="text-sm flex items-center gap-1 py-1"
+                className="flex items-center gap-1 py-1 text-sm"
               >
                 {zip}
                 <button
                   onClick={() => handleRemoveZip(zip)}
-                  className="ml-1 hover:text-destructive transition-colors"
+                  className="ml-1 transition-colors hover:text-destructive"
                   aria-label={`Remove ${zip}`}
                 >
-                  <X className="w-3 h-3" />
+                  <X className="h-3 w-3" />
                 </button>
               </Badge>
             ))}
@@ -147,13 +190,13 @@ export function AdminSettingsPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+            <Users className="h-5 w-5" />
             {t("admin.settings.techTitle")}
           </CardTitle>
           <CardDescription>{t("admin.settings.techDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Input
               placeholder={t("admin.settings.techPlaceholder")}
               value={newTechName}
@@ -182,37 +225,50 @@ export function AdminSettingsPanel() {
               onChange={(e) => setNewTechJoinDate(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddTech()}
             />
-            <Button onClick={handleAddTech} disabled={!newTechName.trim()}>
-              <Plus className="w-4 h-4 mr-1" />
+            <Button onClick={handleAddTech} disabled={!newTechName.trim() || isSavingTech}>
+              {isSavingTech ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-1 h-4 w-4" />
+              )}
               {t("admin.settings.techAdd")}
             </Button>
           </div>
 
+          {techError && (
+            <p className="text-sm text-destructive">{techError}</p>
+          )}
+
           {techAdded && (
-            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2 rounded-lg">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 rounded-lg bg-green-50 p-2 text-sm text-green-700">
+              <CheckCircle2 className="h-4 w-4" />
               {t("admin.settings.techAddedMsg")}
             </div>
           )}
 
-          <div className="space-y-2 max-h-72 overflow-y-auto">
-            {technicians.sort((a, b) => a.name.localeCompare(b.name)).map((tech) => (
+          <div className="max-h-72 space-y-2 overflow-y-auto">
+            {[...technicians].sort((a, b) => a.name.localeCompare(b.name)).map((tech) => (
               <div
                 key={tech.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                className="flex items-center justify-between rounded-lg border bg-card p-3"
               >
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{tech.name}</p>
+                  <p className="text-sm font-medium">{tech.name}</p>
                   <p className="text-xs text-muted-foreground">{tech.area}</p>
-                  {tech.phone && <p className="text-xs text-muted-foreground">📱 {tech.phone}</p>}
-                  {tech.joinDate && <p className="text-xs text-muted-foreground">{t("admin.settings.joined")}: {tech.joinDate}</p>}
+                  {tech.phone && <p className="text-xs text-muted-foreground">{tech.phone}</p>}
+                  {tech.join_date && <p className="text-xs text-muted-foreground">{t("admin.settings.joined")}: {tech.join_date}</p>}
                 </div>
                 <button
                   onClick={() => handleRemoveTech(tech.id)}
-                  className="text-muted-foreground hover:text-destructive transition-colors p-1 ml-2"
+                  disabled={deletingTechId === tech.id}
+                  className="ml-2 p-1 text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
                   aria-label={`Remove ${tech.name}`}
                 >
-                  <X className="w-4 h-4" />
+                  {deletingTechId === tech.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             ))}

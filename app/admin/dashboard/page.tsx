@@ -5,6 +5,17 @@ import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 import { AdminDashboardContent } from "@/components/admin/admin-dashboard-content"
 import { parseLocalDate } from "@/lib/date-utils"
+import type { ReviewRecord } from "@/lib/reviews"
+
+interface TechnicianRecord {
+  id: string
+  name: string
+  area: string
+  phone: string | null
+  join_date: string | null
+  availability?: string | null
+  specialties?: string[] | null
+}
 
 export default async function AdminDashboardPage() {
   const session = await getAdminSession()
@@ -17,7 +28,8 @@ export default async function AdminDashboardPage() {
     .order("appointment_date", { ascending: true })
 
   const allAppointments = appointments || []
-  let reviews = []
+  let reviews: ReviewRecord[] = []
+  let technicians: TechnicianRecord[] = []
 
   try {
     const supabaseAdmin = getSupabaseAdminClient()
@@ -25,6 +37,18 @@ export default async function AdminDashboardPage() {
     reviews = reviewData || []
   } catch (error) {
     console.error("Error fetching reviews:", error)
+  }
+
+  try {
+    const supabaseAdmin = getSupabaseAdminClient()
+    const { data: techniciansData } = await supabaseAdmin
+      .from("technicians")
+      .select("id, name, area, phone, join_date, availability, specialties, created_at")
+      .order("name", { ascending: true })
+
+    technicians = techniciansData || []
+  } catch (error) {
+    console.error("Error fetching technicians:", error)
   }
 
   const pendingCount = allAppointments.filter((a) => a.status === "pending").length
@@ -43,6 +67,7 @@ export default async function AdminDashboardPage() {
     <AdminDashboardContent
       appointments={allAppointments}
       reviews={reviews}
+      technicians={technicians}
       totalCount={totalCount}
       pendingCount={pendingCount}
       completedCount={completedCount}

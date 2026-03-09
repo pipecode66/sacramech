@@ -16,7 +16,12 @@ export async function GET() {
       .select("id")
       .limit(1)
 
-    if (error || reviewsError) {
+    const { error: techniciansError } = await supabase
+      .from("technicians")
+      .select("id")
+      .limit(1)
+
+    if (error || reviewsError || techniciansError) {
       return NextResponse.json({
         status: "migration_needed",
         message: "Database updates are missing. Please run this SQL in your Supabase Dashboard SQL Editor:",
@@ -40,7 +45,23 @@ CREATE TABLE IF NOT EXISTS reviews (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;`
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS technicians (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  area TEXT NOT NULL DEFAULT 'General',
+  phone TEXT NOT NULL,
+  join_date DATE,
+  availability TEXT NOT NULL DEFAULT 'available',
+  specialties TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all operations on technicians" ON technicians;
+CREATE POLICY "Allow all operations on technicians" ON technicians
+  FOR ALL USING (true) WITH CHECK (true);`
       })
     }
 

@@ -26,11 +26,23 @@ interface Appointment {
   appointment_date: string
   status: string
   created_at: string
+  assigned_mechanic?: string
+}
+
+interface Technician {
+  id: string
+  name: string
+  area: string
+  phone: string | null
+  join_date: string | null
+  availability?: string | null
+  specialties?: string[] | null
 }
 
 interface AdminDashboardContentProps {
   appointments: Appointment[]
   reviews: ReviewRecord[]
+  technicians: Technician[]
   totalCount: number
   pendingCount: number
   completedCount: number
@@ -55,6 +67,7 @@ function LogoutButton() {
 export function AdminDashboardContent({
   appointments: allAppointments,
   reviews,
+  technicians,
   totalCount,
   pendingCount,
   completedCount,
@@ -175,7 +188,7 @@ export function AdminDashboardContent({
                 {t("admin.dashboard.mechanics.desc")}
               </p>
             </div>
-            <MechanicAssignmentPanel appointments={allAppointments} />
+            <MechanicAssignmentPanel appointments={allAppointments} technicians={technicians} />
           </TabsContent>
 
           <TabsContent value="reviews" className="space-y-4">
@@ -192,7 +205,7 @@ export function AdminDashboardContent({
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{t("admin.settings.title")}</h2>
             </div>
-            <AdminSettingsPanel />
+            <AdminSettingsPanel technicians={technicians} />
           </TabsContent>
         </Tabs>
       </main>
