@@ -9,3 +9,7 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS service_type TEXT;
 
 -- Add referral source column
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS referral_source TEXT;
+
+-- Add assigned mechanic column
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assigned_mechanic TEXT;
+

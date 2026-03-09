@@ -24,9 +24,13 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 VEHICLE_REGISTRATION_API_USERNAME=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is required for the review API and moderation actions.
+`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` are required to send mechanic assignment SMS notifications.
 `VEHICLE_REGISTRATION_API_USERNAME` enables automatic plate lookups for California license plates.
 
 ## Development
@@ -52,3 +56,4 @@ pnpm build
 ## Database
 
 Use the SQL scripts in `scripts/` to create or update the Supabase schema. The reviews module depends on `scripts/005-create-reviews-table.sql` or the updated `scripts/004-full-setup.sql`.
+

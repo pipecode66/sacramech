@@ -5,10 +5,10 @@ export async function GET() {
   try {
     const supabase = await getSupabaseServerClient()
 
-    // Test if the new columns exist by trying to select them
+    // Test if the expected columns exist by trying to select them
     const { error } = await supabase
       .from("appointments")
-      .select("vehicle_year, vehicle_make, vehicle_model, engine_type, service_type, referral_source")
+      .select("vehicle_year, vehicle_make, vehicle_model, engine_type, service_type, referral_source, assigned_mechanic")
       .limit(1)
 
     const { error: reviewsError } = await supabase
@@ -26,6 +26,7 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS vehicle_model TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS engine_type TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS service_type TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS referral_source TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assigned_mechanic TEXT;
 
 CREATE TABLE IF NOT EXISTS reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

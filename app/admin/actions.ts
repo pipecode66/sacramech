@@ -5,6 +5,8 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
+import { formatLocalDate } from "@/lib/date-utils"
+import { sendTwilioSms } from "@/lib/twilio"
 import bcrypt from "bcryptjs"
 import type { ReviewStatus } from "@/lib/reviews"
 
@@ -108,6 +110,123 @@ export async function deleteAppointment(appointmentId: string) {
 
   revalidatePath("/admin/dashboard")
   return { success: true }
+}
+
+interface SendMechanicAssignmentSmsInput {
+  appointmentId: string
+  mechanicId: string
+  mechanicName: string
+  mechanicPhone: string
+}
+
+function formatTimeSlot(time?: string | null) {
+  if (!time) return ""
+
+  const parts = time.split(":")
+  const hour = Number.parseInt(parts[0] || "", 10)
+
+  if (Number.isNaN(hour)) return ""
+
+  const endHour = hour + 2
+  const fmt = (h: number) => {
+    const ampm = h >= 12 ? "PM" : "AM"
+    const hour12 = h > 12 ? h - 12 : h === 0 ? 12 : h
+    return `${hour12}:00 ${ampm}`
+  }
+
+  return `${fmt(hour)} - ${fmt(endHour)}`
+}
+
+function buildMechanicAssignmentSms(appointment: {
+  first_name: string | null
+  last_name: string | null
+  phone: string | null
+  address: string | null
+  appointment_date: string | null
+  appointment_time: string | null
+  service_type: string | null
+  vehicle_year: string | null
+  vehicle_make: string | null
+  vehicle_model: string | null
+  additional_info: string | null
+}) {
+  const customerName = `${appointment.first_name || ""} ${appointment.last_name || ""}`.trim() || "Unknown customer"
+  const service = appointment.service_type || "General service"
+  const vehicle = [appointment.vehicle_year, appointment.vehicle_make, appointment.vehicle_model].filter(Boolean).join(" ").trim()
+  const dateLabel = formatLocalDate(appointment.appointment_date)
+  const timeLabel = formatTimeSlot(appointment.appointment_time)
+  const notes = appointment.additional_info?.trim()
+
+  const lines = [
+    "Rapi Mobile Mechanic - New assignment",
+    `Customer: ${customerName}`,
+    appointment.phone ? `Customer phone: ${appointment.phone}` : null,
+    `Service: ${service}`,
+    vehicle ? `Vehicle: ${vehicle}` : null,
+    dateLabel ? `Date: ${dateLabel}${timeLabel ? ` (${timeLabel})` : ""}` : null,
+    appointment.address ? `Address: ${appointment.address}` : null,
+    notes ? `Notes: ${notes.slice(0, 220)}` : null,
+  ].filter(Boolean)
+
+  return lines.join("\n")
+}
+
+export async function sendMechanicAssignmentSms({
+  appointmentId,
+  mechanicId,
+  mechanicName,
+  mechanicPhone,
+}: SendMechanicAssignmentSmsInput) {
+  const session = await getAdminSession()
+  if (!session) {
+    return { error: "Unauthorized" }
+  }
+
+  if (!appointmentId || !mechanicId || !mechanicName || !mechanicPhone) {
+    return { error: "Missing assignment data." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+
+  const { data: appointment, error } = await supabase
+    .from("appointments")
+    .select("id, first_name, last_name, phone, address, appointment_date, appointment_time, service_type, vehicle_year, vehicle_make, vehicle_model, additional_info")
+    .eq("id", appointmentId)
+    .single()
+
+  if (error || !appointment) {
+    return { error: "Appointment not found." }
+  }
+
+  const smsBody = buildMechanicAssignmentSms(appointment)
+
+  let smsResult: { sid: string; status?: string | null }
+
+  try {
+    smsResult = await sendTwilioSms({
+      to: mechanicPhone,
+      body: smsBody,
+    })
+  } catch (smsError) {
+    const message = smsError instanceof Error ? smsError.message : "Failed to send SMS via Twilio."
+    return { error: message }
+  }
+
+  const { error: updateError } = await supabase
+    .from("appointments")
+    .update({ assigned_mechanic: mechanicName })
+    .eq("id", appointmentId)
+
+  if (updateError) {
+    console.warn("Could not persist assigned_mechanic on appointments:", updateError)
+  }
+
+  revalidatePath("/admin/dashboard")
+  return {
+    success: true,
+    sid: smsResult.sid,
+    status: smsResult.status,
+  }
 }
 
 export async function updateReviewStatus(reviewId: string, status: ReviewStatus) {

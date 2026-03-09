@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS appointments (
   engine_type TEXT,
   service_type TEXT,
   referral_source TEXT,
+  assigned_mechanic TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -32,6 +33,7 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS vehicle_model TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS engine_type TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS service_type TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS referral_source TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assigned_mechanic TEXT;
 
 -- 3. Create admin_users table
 CREATE TABLE IF NOT EXISTS admin_users (
@@ -91,3 +93,4 @@ VALUES (
   '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
 )
 ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;
+

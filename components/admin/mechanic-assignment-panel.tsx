@@ -1,11 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Users, MapPin, CheckCircle2, AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Users, MapPin, CheckCircle2, AlertCircle, Send, Loader2 } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { formatLocalDate } from "@/lib/date-utils"
+import { sendMechanicAssignmentSms } from "@/app/admin/actions"
 
 // Service area mapping for California
 const serviceAreaMap: Record<string, string> = {
@@ -44,11 +47,10 @@ const serviceAreaMap: Record<string, string> = {
   "95630": "Folsom",
 }
 
-// Example mechanic data
 const exampleMechanics = [
   {
     id: "m1",
-    name: "Carlos Rodríguez",
+    name: "Carlos Rodriguez",
     serviceArea: "Central Sacramento",
     phone: "(916) 555-0101",
     availability: "available",
@@ -56,7 +58,7 @@ const exampleMechanics = [
   },
   {
     id: "m2",
-    name: "Miguel Hernández",
+    name: "Miguel Hernandez",
     serviceArea: "East Sacramento",
     phone: "(916) 555-0102",
     availability: "available",
@@ -64,7 +66,7 @@ const exampleMechanics = [
   },
   {
     id: "m3",
-    name: "Juan García",
+    name: "Juan Garcia",
     serviceArea: "South Sacramento",
     phone: "(916) 555-0103",
     availability: "available",
@@ -72,7 +74,7 @@ const exampleMechanics = [
   },
   {
     id: "m4",
-    name: "Pedro López",
+    name: "Pedro Lopez",
     serviceArea: "North Sacramento",
     phone: "(916) 555-0104",
     availability: "busy",
@@ -113,41 +115,105 @@ interface MechanicAssignmentPanelProps {
   onAssignMechanic?: (appointmentId: string, mechanicId: string) => void
 }
 
+interface SmsFeedback {
+  tone: "success" | "error"
+  message: string
+}
+
 export function MechanicAssignmentPanel({
   appointments,
   onAssignMechanic,
 }: MechanicAssignmentPanelProps) {
   const { t } = useI18n()
+  const router = useRouter()
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null)
-  const [assignedMechanics, setAssignedMechanics] = useState<Record<string, string>>({})
+  const [assignedMechanics, setAssignedMechanics] = useState<Record<string, string>>(() => {
+    const initialAssignments: Record<string, string> = {}
 
-  // Filter pending appointments
-  const pendingAppointments = appointments.filter((a) => a.status === "pending")
+    appointments.forEach((appointment) => {
+      if (!appointment.assigned_mechanic) return
+
+      const byId = exampleMechanics.find((mechanic) => mechanic.id === appointment.assigned_mechanic)
+      const byName = exampleMechanics.find((mechanic) => mechanic.name === appointment.assigned_mechanic)
+      const matchedMechanic = byId || byName
+
+      if (matchedMechanic) {
+        initialAssignments[appointment.id] = matchedMechanic.id
+      }
+    })
+
+    return initialAssignments
+  })
+  const [isSendingSms, setIsSendingSms] = useState(false)
+  const [smsFeedback, setSmsFeedback] = useState<SmsFeedback | null>(null)
+
+  const pendingAppointments = appointments.filter((appointment) => appointment.status === "pending")
 
   const handleAssignMechanic = (appointmentId: string, mechanicId: string) => {
     setAssignedMechanics((prev) => ({
       ...prev,
       [appointmentId]: mechanicId,
     }))
+    setSmsFeedback(null)
     onAssignMechanic?.(appointmentId, mechanicId)
   }
 
   const getAvailableMechanics = (zipCode?: string) => {
     const serviceArea = zipCode ? serviceAreaMap[zipCode] : "Central Sacramento"
-    return exampleMechanics.filter((m) => m.serviceArea === serviceArea)
+    return exampleMechanics.filter((mechanic) => mechanic.serviceArea === serviceArea)
   }
 
-  const currentAppointment = pendingAppointments.find((a) => a.id === selectedAppointment)
+  const currentAppointment = pendingAppointments.find((appointment) => appointment.id === selectedAppointment)
   const customerName = currentAppointment
     ? `${currentAppointment.first_name || ""} ${currentAppointment.last_name || ""}`.trim()
     : ""
+
+  const selectedMechanicId = selectedAppointment ? assignedMechanics[selectedAppointment] : undefined
+  const selectedMechanic = currentAppointment
+    ? getAvailableMechanics(currentAppointment.zip_code).find((mechanic) => mechanic.id === selectedMechanicId)
+    : undefined
+
+  const handleSendSms = async () => {
+    if (!selectedAppointment || !selectedMechanic) {
+      setSmsFeedback({
+        tone: "error",
+        message: t("assign.selectMechanicFirst"),
+      })
+      return
+    }
+
+    setIsSendingSms(true)
+    setSmsFeedback(null)
+
+    const result = await sendMechanicAssignmentSms({
+      appointmentId: selectedAppointment,
+      mechanicId: selectedMechanic.id,
+      mechanicName: selectedMechanic.name,
+      mechanicPhone: selectedMechanic.phone,
+    })
+
+    if (result.success) {
+      setSmsFeedback({
+        tone: "success",
+        message: result.sid ? `${t("assign.smsSent")} (${result.sid})` : t("assign.smsSent"),
+      })
+      router.refresh()
+    } else {
+      setSmsFeedback({
+        tone: "error",
+        message: result.error || t("assign.smsError"),
+      })
+    }
+
+    setIsSendingSms(false)
+  }
 
   if (pendingAppointments.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">{t("assign.noPending")}</h3>
+          <Users className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-2 text-lg font-medium text-foreground">{t("assign.noPending")}</h3>
           <p className="text-muted-foreground">{t("assign.noPendingDesc")}</p>
         </CardContent>
       </Card>
@@ -156,11 +222,10 @@ export function MechanicAssignmentPanel({
 
   return (
     <div className="grid gap-6">
-      {/* Appointment List */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
+            <AlertCircle className="h-5 w-5" />
             {t("assign.pendingTitle")}
           </CardTitle>
           <CardDescription>
@@ -168,17 +233,20 @@ export function MechanicAssignmentPanel({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {pendingAppointments.map((apt) => {
-              const customerName = `${apt.first_name || ""} ${apt.last_name || ""}`.trim()
-              const isSelected = selectedAppointment === apt.id
-              const isMechanicAssigned = assignedMechanics[apt.id]
+          <div className="max-h-96 space-y-2 overflow-y-auto">
+            {pendingAppointments.map((appointment) => {
+              const appointmentCustomerName = `${appointment.first_name || ""} ${appointment.last_name || ""}`.trim()
+              const isSelected = selectedAppointment === appointment.id
+              const isMechanicAssigned = assignedMechanics[appointment.id]
 
               return (
                 <button
-                  key={apt.id}
-                  onClick={() => setSelectedAppointment(apt.id)}
-                  className={`w-full text-left p-3 rounded-lg border transition-all ${isSelected
+                  key={appointment.id}
+                  onClick={() => {
+                    setSelectedAppointment(appointment.id)
+                    setSmsFeedback(null)
+                  }}
+                  className={`w-full rounded-lg border p-3 text-left transition-all ${isSelected
                     ? "border-primary bg-primary/5"
                     : isMechanicAssigned
                       ? "border-green-200 bg-green-50"
@@ -187,17 +255,17 @@ export function MechanicAssignmentPanel({
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm">{customerName || t("assign.unknown")}</p>
+                      <p className="text-sm font-medium">{appointmentCustomerName || t("assign.unknown")}</p>
                       <p className="text-xs text-muted-foreground">
-                        {apt.service_type} • {apt.zip_code}
+                        {appointment.service_type} • {appointment.zip_code}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatLocalDate(apt.appointment_date)}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatLocalDate(appointment.appointment_date)}
                       </p>
                     </div>
                     {isMechanicAssigned ? (
                       <Badge className="ml-2 bg-green-600">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        <CheckCircle2 className="mr-1 h-3 w-3" />
                         {t("assign.assigned")}
                       </Badge>
                     ) : (
@@ -213,12 +281,11 @@ export function MechanicAssignmentPanel({
         </CardContent>
       </Card>
 
-      {/* Mechanic Assignment */}
       {selectedAppointment && currentAppointment && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
+              <Users className="h-5 w-5" />
               {t("assign.assignTitle")}
             </CardTitle>
             <CardDescription>
@@ -241,8 +308,8 @@ export function MechanicAssignmentPanel({
               </div>
               <div className="col-span-2">
                 <p className="text-muted-foreground">{t("assign.serviceArea")}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <MapPin className="w-4 h-4 text-primary" />
+                <div className="mt-1 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
                   <p className="font-medium">
                     {serviceAreaMap[currentAppointment.zip_code || ""] || t("assign.unknown")}
                   </p>
@@ -251,12 +318,12 @@ export function MechanicAssignmentPanel({
             </div>
 
             <div className="border-t pt-4">
-              <p className="text-sm font-medium mb-3">{t("assign.availableMechanics")}</p>
+              <p className="mb-3 text-sm font-medium">{t("assign.availableMechanics")}</p>
               <div className="space-y-2">
                 {getAvailableMechanics(currentAppointment.zip_code).map((mechanic) => (
                   <div
                     key={mechanic.id}
-                    className={`p-3 rounded-lg border-2 transition-all cursor-pointer ${assignedMechanics[selectedAppointment] === mechanic.id
+                    className={`cursor-pointer rounded-lg border-2 p-3 transition-all ${assignedMechanics[selectedAppointment] === mechanic.id
                       ? "border-primary bg-primary/5"
                       : "border-muted hover:border-primary/50"
                       }`}
@@ -265,11 +332,11 @@ export function MechanicAssignmentPanel({
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="font-medium">{mechanic.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{mechanic.phone}</p>
-                        <div className="flex gap-1 mt-2 flex-wrap">
-                          {mechanic.specialties.map((spec) => (
-                            <Badge key={spec} variant="outline" className="text-xs">
-                              {spec}
+                        <p className="mt-1 text-xs text-muted-foreground">{mechanic.phone}</p>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {mechanic.specialties.map((specialty) => (
+                            <Badge key={specialty} variant="outline" className="text-xs">
+                              {specialty}
                             </Badge>
                           ))}
                         </div>
@@ -290,15 +357,49 @@ export function MechanicAssignmentPanel({
             </div>
 
             {!getAvailableMechanics(currentAppointment.zip_code).length && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
                 <p className="text-sm text-yellow-800">
                   {t("assign.noMechanics")}
                 </p>
               </div>
             )}
+
+            <div className="space-y-2 border-t pt-4">
+              <p className="text-xs text-muted-foreground">{t("assign.smsHelper")}</p>
+              <Button
+                type="button"
+                className="w-full"
+                onClick={handleSendSms}
+                disabled={!selectedMechanic || isSendingSms}
+              >
+                {isSendingSms ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("assign.sendingSms")}
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    {t("assign.sendSms")}
+                  </>
+                )}
+              </Button>
+
+              {smsFeedback && (
+                <div
+                  className={`rounded-md border px-3 py-2 text-sm ${smsFeedback.tone === "success"
+                    ? "border-green-200 bg-green-50 text-green-800"
+                    : "border-red-200 bg-red-50 text-red-800"
+                    }`}
+                >
+                  {smsFeedback.message}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
     </div>
   )
 }
+

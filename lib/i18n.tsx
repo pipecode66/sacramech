@@ -290,7 +290,12 @@ const translations = {
     "assign.noMechanics": "No mechanics available in this service area. Consider assigning the closest mechanic.",
     "assign.available": "Available",
     "assign.busy": "Busy",
-
+    "assign.smsHelper": "Select a mechanic, then send the appointment details by SMS.",
+    "assign.sendSms": "Send details by SMS",
+    "assign.sendingSms": "Sending SMS...",
+    "assign.smsSent": "Appointment details sent to mechanic.",
+    "assign.smsError": "Could not send SMS to mechanic.",
+    "assign.selectMechanicFirst": "Select a mechanic before sending the SMS.",
     // Reviews
     "reviews.badge": "Customer feedback",
     "reviews.title": "Reviews and comments from recent customers",
@@ -618,7 +623,12 @@ const translations = {
     "assign.noMechanics": "No hay mecánicos disponibles en esta área. Considera asignar el más cercano.",
     "assign.available": "Disponible",
     "assign.busy": "Ocupado",
-
+    "assign.smsHelper": "Selecciona un mecanico y luego envia los detalles de la cita por SMS.",
+    "assign.sendSms": "Enviar detalles por SMS",
+    "assign.sendingSms": "Enviando SMS...",
+    "assign.smsSent": "Detalles de la cita enviados al mecanico.",
+    "assign.smsError": "No se pudo enviar el SMS al mecanico.",
+    "assign.selectMechanicFirst": "Selecciona un mecanico antes de enviar el SMS.",
     // Admin Settings - extra
     "admin.settings.phoneNumber": "Número Telefónico",
     "admin.settings.joinDate": "Fecha de Incorporación (AAAA-MM-DD)",
@@ -711,3 +721,4 @@ export function useI18n() {
 }
 
 export default I18nProvider
+
