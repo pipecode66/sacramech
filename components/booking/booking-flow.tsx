@@ -9,7 +9,6 @@ import { MapConfirmationStep } from "./map-confirmation-step"
 import { PersonalDetailsStep } from "./personal-details-step"
 import { DateSelectionStep } from "./date-selection-step"
 import { SuccessStep } from "./success-step"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 type Step = "zip" | "vehicle" | "service" | "address" | "map" | "details" | "date" | "success"
 
@@ -32,7 +31,13 @@ interface BookingData {
   date: Date | null
 }
 
-export function BookingFlow({ onResetRef }: { onResetRef?: RefObject<(() => void) | null> }) {
+export function BookingFlow({
+  onResetRef,
+  serviceZipCodes,
+}: {
+  onResetRef?: RefObject<(() => void) | null>
+  serviceZipCodes: string[]
+}) {
   const [step, setStep] = useState<Step>("zip")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [bookingData, setBookingData] = useState<BookingData>({
@@ -85,28 +90,39 @@ export function BookingFlow({ onResetRef }: { onResetRef?: RefObject<(() => void
   const handleDateSubmit = async (date: Date) => {
     setIsSubmitting(true)
     try {
-      const supabase = getSupabaseBrowserClient()
-
-      const { error } = await supabase.from("appointments").insert({
-        first_name: bookingData.firstName,
-        last_name: bookingData.lastName,
-        email: bookingData.email,
-        phone: bookingData.phone,
-        zip_code: bookingData.zipCode,
-        address: bookingData.address,
-        additional_info: bookingData.additionalInfo,
-        appointment_date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
-        appointment_time: `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:00`,
-        status: "pending",
-        vehicle_year: bookingData.vehicleYear,
-        vehicle_make: bookingData.vehicleMake,
-        vehicle_model: bookingData.vehicleModel,
-        engine_type: bookingData.engineType,
-        service_type: bookingData.serviceType,
-        referral_source: bookingData.referralSource,
+      const response = await fetch("/api/appointments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: bookingData.firstName,
+          lastName: bookingData.lastName,
+          email: bookingData.email,
+          phone: bookingData.phone,
+          zipCode: bookingData.zipCode,
+          address: bookingData.address,
+          additionalInfo: bookingData.additionalInfo,
+          appointmentDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
+          appointmentHour: date.getHours(),
+          vehicleYear: bookingData.vehicleYear,
+          vehicleMake: bookingData.vehicleMake,
+          vehicleModel: bookingData.vehicleModel,
+          engineType: bookingData.engineType,
+          serviceType: bookingData.serviceType,
+          referralSource: bookingData.referralSource,
+        }),
       })
 
-      if (error) throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to create appointment")
+      }
+
+      if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+        console.warn("Appointment created with SMS warnings:", result.warnings)
+      }
 
       setBookingData((prev) => ({ ...prev, date }))
       setStep("success")
@@ -172,7 +188,7 @@ export function BookingFlow({ onResetRef }: { onResetRef?: RefObject<(() => void
         </div>
       )}
 
-      {step === "zip" && <ZipCodeStep onNext={handleZipNext} />}
+      {step === "zip" && <ZipCodeStep onNext={handleZipNext} serviceZipCodes={serviceZipCodes} />}
       {step === "vehicle" && (
         <VehicleInfoStep
           onNext={handleVehicleNext}

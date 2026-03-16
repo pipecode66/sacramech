@@ -99,7 +99,9 @@ export function KanbanBoard({ appointments }: KanbanBoardProps) {
   }
 
   const getAppointmentsByStatus = (status: string) => {
-    return appointments.filter(a => a.status === status)
+    return appointments
+      .filter((appointment) => appointment.status === status)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   }
 
   return (

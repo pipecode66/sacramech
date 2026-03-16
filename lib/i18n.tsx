@@ -82,7 +82,7 @@ const translations = {
 
     // Service step
     "service.title": "Select Services",
-    "service.subtitle": "Select one or more services. If you're not sure, choose Full Vehicle Diagnostic.",
+    "service.subtitle": "Select one or more services. General Maintenance now covers tune-up, fluids, belts, filters, wipers, A/C, tire service, and more.",
     "service.oilChange": "Oil Change",
     "service.oilChangeDesc": "Full synthetic or conventional oil change with filter replacement",
     "service.battery": "Battery Replacement",
@@ -96,7 +96,7 @@ const translations = {
     "service.engine": "Engine Repair",
     "service.engineDesc": "Engine diagnostics, tune-ups, and mechanical repairs",
     "service.maintenance": "General Maintenance",
-    "service.maintenanceDesc": "Fluid top-offs, belt inspection, filter replacements, and more",
+    "service.maintenanceDesc": "tune-up, fluid top-offs, belt inspection, filter replacement, wiper replacement, A/C diagnosis & repair, tire service, more",
     "service.diagnostic": "Full Vehicle Diagnostic",
     "service.diagnosticDesc": "Complete inspection when you're unsure what's wrong — we'll find it",
 

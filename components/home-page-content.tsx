@@ -10,9 +10,10 @@ import type { ApprovedReviewsPayload } from "@/lib/review-service"
 
 interface HomePageContentProps {
   initialReviews: ApprovedReviewsPayload
+  serviceZipCodes: string[]
 }
 
-export function HomePageContent({ initialReviews }: HomePageContentProps) {
+export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageContentProps) {
   const { t } = useI18n()
   const resetRef = useRef<(() => void) | null>(null)
 
@@ -35,7 +36,7 @@ export function HomePageContent({ initialReviews }: HomePageContentProps) {
               </p>
             </div>
 
-            <BookingFlow onResetRef={resetRef} />
+            <BookingFlow onResetRef={resetRef} serviceZipCodes={serviceZipCodes} />
           </div>
         </section>
 

@@ -127,6 +127,20 @@ interface CreateTechnicianInput {
   joinDate?: string
 }
 
+interface CreateAppointmentPartQuoteInput {
+  appointmentId: string
+  supplierName?: string
+  partName: string
+  partCategory?: string
+  partNumber?: string
+  unitPrice: string
+  rating?: string
+  popularityScore?: string
+  sourceUrl?: string
+  notes?: string
+  searchQuery?: string
+}
+
 function formatTimeSlot(time?: string | null) {
   if (!time) return ""
 
@@ -212,6 +226,13 @@ function normalizePhoneToE164(rawPhone: string, countryCode?: string): string | 
   }
 
   return null
+}
+
+function parseOptionalNumber(value?: string, mode: "float" | "int" = "float") {
+  if (!value?.trim()) return null
+
+  const parsedValue = mode === "int" ? Number.parseInt(value, 10) : Number.parseFloat(value)
+  return Number.isFinite(parsedValue) ? parsedValue : null
 }
 
 export async function sendMechanicAssignmentSms({
@@ -333,6 +354,129 @@ export async function deleteTechnician(technicianId: string) {
 
   if (error) {
     return { error: "Failed to delete technician." }
+  }
+
+  revalidatePath("/admin/dashboard")
+  return { success: true }
+}
+
+export async function createServiceZip(zipCode: string) {
+  const session = await getAdminSession()
+  if (!session) {
+    return { error: "Unauthorized" }
+  }
+
+  const cleanZip = zipCode.trim()
+  if (!/^\d{5}$/.test(cleanZip)) {
+    return { error: "ZIP codes must be exactly 5 digits." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+  const { error } = await supabase
+    .from("service_zip_codes")
+    .upsert({ zip_code: cleanZip }, { onConflict: "zip_code" })
+
+  if (error) {
+    return { error: "Could not save the ZIP code." }
+  }
+
+  revalidatePath("/")
+  revalidatePath("/admin/dashboard")
+  return { success: true, zipCode: cleanZip }
+}
+
+export async function deleteServiceZip(zipCode: string) {
+  const session = await getAdminSession()
+  if (!session) {
+    return { error: "Unauthorized" }
+  }
+
+  const cleanZip = zipCode.trim()
+  if (!/^\d{5}$/.test(cleanZip)) {
+    return { error: "ZIP codes must be exactly 5 digits." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+  const { error } = await supabase.from("service_zip_codes").delete().eq("zip_code", cleanZip)
+
+  if (error) {
+    return { error: "Could not delete the ZIP code." }
+  }
+
+  revalidatePath("/")
+  revalidatePath("/admin/dashboard")
+  return { success: true }
+}
+
+export async function createAppointmentPartQuote({
+  appointmentId,
+  supplierName,
+  partName,
+  partCategory,
+  partNumber,
+  unitPrice,
+  rating,
+  popularityScore,
+  sourceUrl,
+  notes,
+  searchQuery,
+}: CreateAppointmentPartQuoteInput) {
+  const session = await getAdminSession()
+  if (!session) {
+    return { error: "Unauthorized" }
+  }
+
+  if (!appointmentId || !partName.trim()) {
+    return { error: "Appointment and part name are required." }
+  }
+
+  const parsedPrice = parseOptionalNumber(unitPrice)
+  if (parsedPrice === null) {
+    return { error: "A valid unit price is required." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+  const { data, error } = await supabase
+    .from("appointment_part_quotes")
+    .insert({
+      appointment_id: appointmentId,
+      supplier_name: supplierName?.trim() || "O'Reilly Auto Parts",
+      part_name: partName.trim(),
+      part_category: partCategory?.trim() || null,
+      part_number: partNumber?.trim() || null,
+      unit_price: parsedPrice,
+      rating: parseOptionalNumber(rating),
+      popularity_score: parseOptionalNumber(popularityScore, "int"),
+      source_url: sourceUrl?.trim() || null,
+      notes: notes?.trim() || null,
+      search_query: searchQuery?.trim() || null,
+    })
+    .select("*")
+    .single()
+
+  if (error || !data) {
+    return { error: "Could not save the parts quote." }
+  }
+
+  revalidatePath("/admin/dashboard")
+  return { success: true, quote: data }
+}
+
+export async function deleteAppointmentPartQuote(quoteId: string) {
+  const session = await getAdminSession()
+  if (!session) {
+    return { error: "Unauthorized" }
+  }
+
+  if (!quoteId) {
+    return { error: "Quote id is required." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+  const { error } = await supabase.from("appointment_part_quotes").delete().eq("id", quoteId)
+
+  if (error) {
+    return { error: "Could not delete the parts quote." }
   }
 
   revalidatePath("/admin/dashboard")

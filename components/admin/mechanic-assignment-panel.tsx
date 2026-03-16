@@ -52,8 +52,8 @@ interface Appointment {
   customer_name?: string
   first_name?: string
   last_name?: string
-  zip_code?: string
-  service_type?: string
+  zip_code?: string | null
+  service_type?: string | null
   appointment_date?: string
   status?: string
   assigned_mechanic?: string
@@ -121,7 +121,7 @@ export function MechanicAssignmentPanel({
     onAssignMechanic?.(appointmentId, mechanicId)
   }
 
-  const getAvailableMechanics = (zipCode?: string) => {
+  const getAvailableMechanics = (zipCode?: string | null) => {
     const serviceArea = (zipCode ? serviceAreaMap[zipCode] : "") || "Central Sacramento"
     const normalizedServiceArea = serviceArea.trim().toLowerCase()
     return technicians.filter((mechanic) => mechanic.area.trim().toLowerCase() === normalizedServiceArea)

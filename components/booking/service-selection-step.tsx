@@ -5,19 +5,17 @@ import React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Wrench, Droplets, Battery, Disc3, Thermometer, Gauge, Settings, Search, Check } from "lucide-react"
+import { ArrowLeft, Wrench, Droplets, Battery, Disc3, Settings, Check } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
+import { BOOKING_SERVICE_OPTIONS } from "@/lib/service-options"
 
-const serviceConfig = [
-  { id: "oil-change", labelKey: "service.oilChange" as const, descKey: "service.oilChangeDesc" as const, icon: Droplets },
-  { id: "battery-replacement", labelKey: "service.battery" as const, descKey: "service.batteryDesc" as const, icon: Battery },
-  { id: "brake-service", labelKey: "service.brake" as const, descKey: "service.brakeDesc" as const, icon: Disc3 },
-  { id: "ac-repair", labelKey: "service.ac" as const, descKey: "service.acDesc" as const, icon: Thermometer },
-  { id: "tire-service", labelKey: "service.tire" as const, descKey: "service.tireDesc" as const, icon: Gauge },
-  { id: "engine-repair", labelKey: "service.engine" as const, descKey: "service.engineDesc" as const, icon: Settings },
-  { id: "general-maintenance", labelKey: "service.maintenance" as const, descKey: "service.maintenanceDesc" as const, icon: Wrench },
-  { id: "full-diagnostic", labelKey: "service.diagnostic" as const, descKey: "service.diagnosticDesc" as const, icon: Search },
-]
+const serviceIcons = {
+  "oil-change": Droplets,
+  "battery-replacement": Battery,
+  "brake-service": Disc3,
+  "engine-repair": Settings,
+  "general-maintenance": Wrench,
+} as const
 
 interface ServiceSelectionStepProps {
   onNext: (serviceType: string) => void
@@ -39,7 +37,7 @@ export function ServiceSelectionStep({ onNext, onBack }: ServiceSelectionStepPro
     if (selected.length > 0) {
       const labels = selected
         .map((id) => {
-          const service = serviceConfig.find((s) => s.id === id)
+          const service = BOOKING_SERVICE_OPTIONS.find((s) => s.id === id)
           return service ? t(service.labelKey) : id
         })
         .join(", ")
@@ -61,8 +59,8 @@ export function ServiceSelectionStep({ onNext, onBack }: ServiceSelectionStepPro
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-3">
-            {serviceConfig.map((service) => {
-              const Icon = service.icon
+            {BOOKING_SERVICE_OPTIONS.map((service) => {
+              const Icon = serviceIcons[service.id as keyof typeof serviceIcons] || Wrench
               const isSelected = selected.includes(service.id)
               return (
                 <button

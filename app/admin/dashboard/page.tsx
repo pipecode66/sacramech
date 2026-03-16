@@ -6,6 +6,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 import { AdminDashboardContent } from "@/components/admin/admin-dashboard-content"
 import { parseLocalDate } from "@/lib/date-utils"
 import type { ReviewRecord } from "@/lib/reviews"
+import { getServiceZipCodes } from "@/lib/service-zip-codes"
 
 interface TechnicianRecord {
   id: string
@@ -17,6 +18,22 @@ interface TechnicianRecord {
   specialties?: string[] | null
 }
 
+interface AppointmentPartQuoteRecord {
+  id: string
+  appointment_id: string
+  supplier_name: string
+  part_name: string
+  part_category: string | null
+  part_number: string | null
+  unit_price: number | null
+  rating: number | null
+  popularity_score: number | null
+  source_url: string | null
+  notes: string | null
+  search_query: string | null
+  created_at: string
+}
+
 export default async function AdminDashboardPage() {
   const session = await getAdminSession()
   if (!session) redirect("/admin/login")
@@ -25,11 +42,13 @@ export default async function AdminDashboardPage() {
   const { data: appointments } = await supabase
     .from("appointments")
     .select("*")
-    .order("appointment_date", { ascending: true })
+    .order("created_at", { ascending: false })
 
   const allAppointments = appointments || []
   let reviews: ReviewRecord[] = []
   let technicians: TechnicianRecord[] = []
+  let partQuotes: AppointmentPartQuoteRecord[] = []
+  const serviceZipCodes = await getServiceZipCodes()
 
   try {
     const supabaseAdmin = getSupabaseAdminClient()
@@ -51,6 +70,18 @@ export default async function AdminDashboardPage() {
     console.error("Error fetching technicians:", error)
   }
 
+  try {
+    const supabaseAdmin = getSupabaseAdminClient()
+    const { data: quotesData } = await supabaseAdmin
+      .from("appointment_part_quotes")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    partQuotes = quotesData || []
+  } catch (error) {
+    console.error("Error fetching appointment part quotes:", error)
+  }
+
   const pendingCount = allAppointments.filter((a) => a.status === "pending").length
   const completedCount = allAppointments.filter((a) => a.status === "completed").length
   const totalCount = allAppointments.length
@@ -68,6 +99,8 @@ export default async function AdminDashboardPage() {
       appointments={allAppointments}
       reviews={reviews}
       technicians={technicians}
+      serviceZipCodes={serviceZipCodes}
+      partQuotes={partQuotes}
       totalCount={totalCount}
       pendingCount={pendingCount}
       completedCount={completedCount}

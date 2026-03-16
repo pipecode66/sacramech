@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CheckCircle2, Calendar, MapPin, User, Mail, Phone, Car, Wrench, Clock } from "lucide-react"
 import { format } from "date-fns"
 import { useI18n } from "@/lib/i18n"
+import { BookingFeedbackCard } from "@/components/reviews/booking-feedback-card"
 
 interface SuccessStepProps {
   bookingDetails: {
@@ -37,96 +38,104 @@ export function SuccessStep({ bookingDetails, onNewBooking }: SuccessStepProps) 
   const timeLabel = `${formatHour(startHour)} - ${formatHour(endHour)}`
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
-      <CardHeader className="text-center">
-        <div className="mx-auto w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle2 className="w-10 h-10 text-accent" />
-        </div>
-        <CardTitle className="text-2xl text-accent">{t("success.title")}</CardTitle>
-        <CardDescription>
-          {t("success.subtitle")}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-3">
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <User className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">{t("success.name")}</p>
-              <p className="font-medium">{bookingDetails.firstName} {bookingDetails.lastName}</p>
+    <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[1fr_0.88fr]">
+      <Card className="shadow-lg">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/20">
+            <CheckCircle2 className="h-10 w-10 text-accent" />
+          </div>
+          <CardTitle className="text-2xl text-accent">{t("success.title")}</CardTitle>
+          <CardDescription>{t("success.subtitle")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 rounded-lg bg-muted p-3">
+              <User className="mt-0.5 h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">{t("success.name")}</p>
+                <p className="font-medium">{bookingDetails.firstName} {bookingDetails.lastName}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg bg-muted p-3">
+              <Car className="mt-0.5 h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">{t("success.vehicle")}</p>
+                <p className="font-medium">
+                  {bookingDetails.vehicleYear} {bookingDetails.vehicleMake} {bookingDetails.vehicleModel}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg bg-muted p-3">
+              <Wrench className="mt-0.5 h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">{t("success.service")}</p>
+                <p className="font-medium">{bookingDetails.serviceType}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg bg-muted p-3">
+              <Calendar className="mt-0.5 h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">{t("success.date")}</p>
+                <p className="font-medium">{format(bookingDetails.date, "EEEE, MMMM d, yyyy")}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg bg-muted p-3">
+              <Clock className="mt-0.5 h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">{t("success.time")}</p>
+                <p className="font-medium">{timeLabel}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg bg-muted p-3">
+              <MapPin className="mt-0.5 h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">{t("success.location")}</p>
+                <p className="font-medium">{bookingDetails.address}</p>
+                {bookingDetails.additionalInfo && (
+                  <p className="mt-2 text-sm text-muted-foreground">{bookingDetails.additionalInfo}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex items-start gap-3 rounded-lg bg-muted p-3">
+                <Mail className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("success.email")}</p>
+                  <p className="font-medium">{bookingDetails.email}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-lg bg-muted p-3">
+                <Phone className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">{t("success.phone")}</p>
+                  <p className="font-medium">{bookingDetails.phone}</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <Car className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">{t("success.vehicle")}</p>
-              <p className="font-medium">
-                {bookingDetails.vehicleYear} {bookingDetails.vehicleMake} {bookingDetails.vehicleModel}
-              </p>
-            </div>
-          </div>
+          <p className="text-center text-sm text-muted-foreground">{t("success.contactNote")}</p>
 
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <Wrench className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">{t("success.service")}</p>
-              <p className="font-medium">{bookingDetails.serviceType}</p>
-            </div>
-          </div>
+          <Button onClick={onNewBooking} variant="outline" className="w-full bg-transparent">
+            {t("success.newBooking")}
+          </Button>
+        </CardContent>
+      </Card>
 
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">{t("success.date")}</p>
-              <p className="font-medium">{format(bookingDetails.date, "EEEE, MMMM d, yyyy")}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">{t("success.time")}</p>
-              <p className="font-medium">{timeLabel}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">{t("success.location")}</p>
-              <p className="font-medium">{bookingDetails.address}</p>
-              {bookingDetails.additionalInfo && (
-                <p className="text-sm text-muted-foreground mt-2">{bookingDetails.additionalInfo}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <Mail className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">{t("success.email")}</p>
-              <p className="font-medium">{bookingDetails.email}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <Phone className="w-5 h-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="text-sm text-muted-foreground">{t("success.phone")}</p>
-              <p className="font-medium">{bookingDetails.phone}</p>
-            </div>
-          </div>
-        </div>
-
-        <p className="text-sm text-center text-muted-foreground">
-          {t("success.contactNote")}
-        </p>
-
-        <Button onClick={onNewBooking} variant="outline" className="w-full bg-transparent">
-          {t("success.newBooking")}
-        </Button>
-      </CardContent>
-    </Card>
+      <div className="space-y-6">
+        <BookingFeedbackCard
+          reviewerName={`${bookingDetails.firstName} ${bookingDetails.lastName}`.trim()}
+          reviewerEmail={bookingDetails.email}
+          serviceType={bookingDetails.serviceType}
+        />
+      </div>
+    </div>
   )
 }

@@ -46,7 +46,7 @@ export async function sendTwilioSms({ to, body }: SendSmsParams): Promise<SendSm
 
   const normalizedTo = normalizePhoneToE164(to)
   if (!normalizedTo) {
-    throw new Error("Invalid mechanic phone number format.")
+    throw new Error("Invalid recipient phone number format.")
   }
 
   const normalizedFrom = normalizePhoneToE164(config.from)

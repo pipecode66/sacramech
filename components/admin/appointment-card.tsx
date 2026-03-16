@@ -5,6 +5,7 @@ import React from "react"
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -31,7 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, User, Mail, Phone, Clock, Eye, MoreVertical, Trash2, Car, Wrench, Megaphone } from "lucide-react"
 import { format } from "date-fns"
-import { deleteAppointment } from "@/app/admin/actions"
+import { deleteAppointment, updateAppointmentStatus } from "@/app/admin/actions"
 import { useRouter } from "next/navigation"
 import { useI18n } from "@/lib/i18n"
 import { formatLocalDate, parseLocalDate } from "@/lib/date-utils"
@@ -66,8 +67,15 @@ export function AppointmentCard({ appointment, isDragging }: AppointmentCardProp
   const [isOpen, setIsOpen] = useState(false)
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const router = useRouter()
   const { t } = useI18n()
+  const statusOptions = [
+    { value: "pending", label: t("kanban.pending") },
+    { value: "postponed", label: t("kanban.postponed") },
+    { value: "completed", label: t("kanban.completed") },
+    { value: "cancelled", label: t("kanban.cancelled") },
+  ]
 
   const statusColor = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -109,6 +117,19 @@ export function AppointmentCard({ appointment, isDragging }: AppointmentCardProp
       router.refresh()
     }
     setIsDeleting(false)
+  }
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!newStatus || newStatus === appointment.status || isUpdatingStatus) {
+      return
+    }
+
+    setIsUpdatingStatus(true)
+    const result = await updateAppointmentStatus(appointment.id, newStatus)
+    if (result.success) {
+      router.refresh()
+    }
+    setIsUpdatingStatus(false)
   }
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -157,6 +178,20 @@ export function AppointmentCard({ appointment, isDragging }: AppointmentCardProp
             <MapPin className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
             <span className="truncate">{appointment.address}</span>
           </div>
+          <div className="md:hidden pt-1" onClick={(event) => event.stopPropagation()}>
+            <Select value={appointment.status} onValueChange={(value) => void handleStatusChange(value)} disabled={isUpdatingStatus}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Move to" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button variant="outline" size="sm" className="w-full mt-2 bg-transparent text-xs sm:text-sm">
             <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
             {t("appt.viewDetails")}
@@ -193,6 +228,22 @@ export function AppointmentCard({ appointment, isDragging }: AppointmentCardProp
           </DialogHeader>
 
           <div className="space-y-3 sm:space-y-4 mt-2 sm:mt-4">
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Move appointment</p>
+              <Select value={appointment.status} onValueChange={(value) => void handleStatusChange(value)} disabled={isUpdatingStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Customer Info */}
             <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-muted rounded-lg">
               <User className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground mt-0.5 shrink-0" />

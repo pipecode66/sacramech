@@ -8,9 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MapPin, Users, Plus, X, CheckCircle2, Loader2 } from "lucide-react"
-import { SACRAMENTO_ZIP_CODES } from "@/lib/sacramento-zip-codes"
 import { useI18n } from "@/lib/i18n"
-import { createTechnician, deleteTechnician } from "@/app/admin/actions"
+import { createServiceZip, createTechnician, deleteServiceZip, deleteTechnician } from "@/app/admin/actions"
 
 interface Technician {
   id: string
@@ -24,6 +23,7 @@ interface Technician {
 
 interface AdminSettingsPanelProps {
   technicians: Technician[]
+  serviceZipCodes: string[]
 }
 
 const COUNTRY_PREFIX_OPTIONS = [
@@ -40,15 +40,17 @@ const COUNTRY_PREFIX_OPTIONS = [
   { value: "+51", label: "🇵🇪 +51 (Peru)" },
 ]
 
-export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSettingsPanelProps) {
+export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZipCodes: initialServiceZipCodes }: AdminSettingsPanelProps) {
   const { t } = useI18n()
   const router = useRouter()
 
-  // ZIP codes state - start from the imported list
-  const [zipCodes, setZipCodes] = useState<string[]>([...SACRAMENTO_ZIP_CODES])
+  // ZIP codes state
+  const [zipCodes, setZipCodes] = useState<string[]>(initialServiceZipCodes)
   const [newZip, setNewZip] = useState("")
   const [zipAdded, setZipAdded] = useState(false)
   const [zipError, setZipError] = useState("")
+  const [isSavingZip, setIsSavingZip] = useState(false)
+  const [deletingZip, setDeletingZip] = useState<string | null>(null)
 
   // Technicians state
   const [technicians, setTechnicians] = useState<Technician[]>(initialTechnicians)
@@ -66,9 +68,13 @@ export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSet
     setTechnicians(initialTechnicians)
   }, [initialTechnicians])
 
-  const handleAddZip = () => {
+  useEffect(() => {
+    setZipCodes(initialServiceZipCodes)
+  }, [initialServiceZipCodes])
+
+  const handleAddZip = async () => {
     const clean = newZip.trim()
-    if (!clean) return
+    if (!clean || isSavingZip) return
     if (!/^\d{5}$/.test(clean)) {
       setZipError("ZIP codes must be exactly 5 digits.")
       return
@@ -77,15 +83,41 @@ export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSet
       setZipError("This ZIP code is already in the list.")
       return
     }
-    setZipCodes((prev) => [...prev, clean])
+
+    setIsSavingZip(true)
+    const result = await createServiceZip(clean)
+
+    if (!result.success) {
+      setZipError(result.error || "Could not save the ZIP code.")
+      setIsSavingZip(false)
+      return
+    }
+
+    setZipCodes((prev) => [...prev, clean].sort((a, b) => Number.parseInt(a, 10) - Number.parseInt(b, 10)))
     setNewZip("")
     setZipError("")
     setZipAdded(true)
     setTimeout(() => setZipAdded(false), 3000)
+    setIsSavingZip(false)
+    router.refresh()
   }
 
-  const handleRemoveZip = (zip: string) => {
+  const handleRemoveZip = async (zip: string) => {
+    if (deletingZip) return
+
+    setDeletingZip(zip)
+    setZipError("")
+
+    const result = await deleteServiceZip(zip)
+    if (!result.success) {
+      setZipError(result.error || "Could not delete the ZIP code.")
+      setDeletingZip(null)
+      return
+    }
+
     setZipCodes((prev) => prev.filter((z) => z !== zip))
+    setDeletingZip(null)
+    router.refresh()
   }
 
   const handleAddTech = async () => {
@@ -164,8 +196,8 @@ export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSet
               className="max-w-xs"
               onKeyDown={(e) => e.key === "Enter" && handleAddZip()}
             />
-            <Button onClick={handleAddZip} disabled={!newZip.trim()}>
-              <Plus className="mr-1 h-4 w-4" />
+            <Button onClick={() => void handleAddZip()} disabled={!newZip.trim() || isSavingZip}>
+              {isSavingZip ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Plus className="mr-1 h-4 w-4" />}
               {t("admin.settings.zipAdd")}
             </Button>
           </div>
@@ -190,11 +222,12 @@ export function AdminSettingsPanel({ technicians: initialTechnicians }: AdminSet
               >
                 {zip}
                 <button
-                  onClick={() => handleRemoveZip(zip)}
+                  onClick={() => void handleRemoveZip(zip)}
                   className="ml-1 transition-colors hover:text-destructive"
                   aria-label={`Remove ${zip}`}
+                  disabled={deletingZip === zip}
                 >
-                  <X className="h-3 w-3" />
+                  {deletingZip === zip ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
                 </button>
               </Badge>
             ))}

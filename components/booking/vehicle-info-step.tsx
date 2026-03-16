@@ -10,18 +10,38 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useI18n } from "@/lib/i18n"
-import { decodePlate, normalizePlate } from "@/lib/plate-decoder"
 import { decodeVin, getVinFormatError, isValidVinFormat } from "@/lib/vin-decoder"
 
 const currentYear = new Date().getFullYear()
-const years = Array.from({ length: 40 }, (_, i) => String(currentYear - i))
+const years = Array.from({ length: 40 }, (_, index) => String(currentYear - index))
 
 const carMakes = [
-  "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet",
-  "Chrysler", "Dodge", "Fiat", "Ford", "GMC", "Honda", "Hyundai",
-  "Infiniti", "Jeep", "Kia", "Lincoln",
-  "Mazda", "Mini", "Mitsubishi", "Nissan", "Ram",
-  "Subaru", "Toyota", "Volkswagen", "Other",
+  "Acura",
+  "Audi",
+  "BMW",
+  "Buick",
+  "Cadillac",
+  "Chevrolet",
+  "Chrysler",
+  "Dodge",
+  "Fiat",
+  "Ford",
+  "GMC",
+  "Honda",
+  "Hyundai",
+  "Infiniti",
+  "Jeep",
+  "Kia",
+  "Lincoln",
+  "Mazda",
+  "Mini",
+  "Mitsubishi",
+  "Nissan",
+  "Ram",
+  "Subaru",
+  "Toyota",
+  "Volkswagen",
+  "Other",
 ]
 
 const engineTypes = [
@@ -39,7 +59,7 @@ interface VehicleInfoStepProps {
   onBack: () => void
 }
 
-type UIMode = "vin" | "plate" | "manual"
+type UIMode = "vin" | "manual"
 
 type DecodedVehicle = {
   make: string
@@ -53,7 +73,6 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
 
   const [uiMode, setUiMode] = useState<UIMode>("vin")
   const [vin, setVin] = useState("")
-  const [plate, setPlate] = useState("")
   const [isLookingUp, setIsLookingUp] = useState(false)
   const [lookupError, setLookupError] = useState("")
   const [decodedVehicle, setDecodedVehicle] = useState<DecodedVehicle | null>(null)
@@ -86,10 +105,6 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
       setVin("")
     }
 
-    if (nextMode !== "plate") {
-      setPlate("")
-    }
-
     if (nextMode !== "manual") {
       resetManualState()
     }
@@ -118,28 +133,6 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
       }
     } catch {
       setLookupError("Error decoding VIN. Please try again.")
-    } finally {
-      setIsLookingUp(false)
-    }
-  }
-
-  const handleDecodePlate = async (event: FormEvent) => {
-    event.preventDefault()
-    setLookupError("")
-    setIsLookingUp(true)
-
-    try {
-      const result = await decodePlate(plate, "CA")
-
-      if (result.success && result.data) {
-        setDecodedVehicle(result.data)
-        if (result.data.engineType) {
-          setEngineType(result.data.engineType)
-        }
-        return
-      }
-
-      setLookupError(result.error || "Error al consultar la placa")
     } finally {
       setIsLookingUp(false)
     }
@@ -177,22 +170,12 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
 
   const handleResetDecoded = () => {
     resetLookupState()
-
     if (uiMode === "vin") {
       setVin("")
     }
-
-    if (uiMode === "plate") {
-      setPlate("")
-    }
   }
 
-  const cardDescription =
-    uiMode === "manual"
-      ? t("vehicle.subtitle")
-      : uiMode === "plate"
-        ? t("vehicle.plateSubtitle")
-        : t("vehicle.vinSubtitle")
+  const cardDescription = uiMode === "manual" ? t("vehicle.subtitle") : t("vehicle.vinSubtitle")
 
   return (
     <Card className="mx-auto w-full max-w-md shadow-lg">
@@ -205,9 +188,8 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
       </CardHeader>
       <CardContent className="space-y-5">
         <Tabs value={uiMode} onValueChange={handleModeChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="vin">{t("vehicle.lookupVin")}</TabsTrigger>
-            <TabsTrigger value="plate">{t("vehicle.lookupPlate")}</TabsTrigger>
             <TabsTrigger value="manual">{t("vehicle.lookupManual")}</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -289,43 +271,23 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
           </form>
         )}
 
-        {uiMode !== "manual" && !decodedVehicle && (
-          <form onSubmit={uiMode === "plate" ? handleDecodePlate : handleDecodeVin} className="space-y-5">
-            {uiMode === "vin" ? (
-              <div className="space-y-2">
-                <Label htmlFor="vin">VIN (Vehicle Identification Number)</Label>
-                <Input
-                  id="vin"
-                  placeholder={t("vehicle.vinPlaceholder")}
-                  value={vin}
-                  onChange={(event) => {
-                    setVin(event.target.value)
-                    setLookupError("")
-                  }}
-                  disabled={isLookingUp}
-                  maxLength={17}
-                />
-                <p className="text-xs text-muted-foreground">{t("vehicle.vinExample")}</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="plate">{t("vehicle.plateLabel")}</Label>
-                <Input
-                  id="plate"
-                  placeholder={t("vehicle.platePlaceholder")}
-                  value={plate}
-                  onChange={(event) => {
-                    setPlate(event.target.value.toUpperCase())
-                    setLookupError("")
-                  }}
-                  disabled={isLookingUp}
-                  maxLength={10}
-                  autoCapitalize="characters"
-                />
-                <p className="text-xs text-muted-foreground">{t("vehicle.plateExample")}</p>
-                <p className="text-xs text-muted-foreground">{t("vehicle.plateStateHint")}</p>
-              </div>
-            )}
+        {uiMode === "vin" && !decodedVehicle && (
+          <form onSubmit={handleDecodeVin} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="vin">VIN (Vehicle Identification Number)</Label>
+              <Input
+                id="vin"
+                placeholder={t("vehicle.vinPlaceholder")}
+                value={vin}
+                onChange={(event) => {
+                  setVin(event.target.value)
+                  setLookupError("")
+                }}
+                disabled={isLookingUp}
+                maxLength={17}
+              />
+              <p className="text-xs text-muted-foreground">{t("vehicle.vinExample")}</p>
+            </div>
 
             {lookupError && (
               <div className="flex gap-2 rounded-md border border-red-200 bg-red-50 p-3">
@@ -339,30 +301,24 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t("common.back")}
               </Button>
-              <Button
-                type="submit"
-                className="flex-1"
-                disabled={(uiMode === "vin" ? !vin : !normalizePlate(plate)) || isLookingUp}
-              >
-                {isLookingUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {uiMode === "plate"
-                  ? isLookingUp
-                    ? t("vehicle.searchingPlate")
-                    : t("vehicle.decodePlate")
-                  : isLookingUp
-                    ? t("vehicle.decoding")
-                    : t("vehicle.decodeVin")}
+              <Button type="submit" className="flex-1" disabled={!vin || isLookingUp}>
+                {isLookingUp ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("vehicle.decoding")}
+                  </>
+                ) : (
+                  t("vehicle.decodeVin")
+                )}
               </Button>
             </div>
           </form>
         )}
 
-        {uiMode !== "manual" && decodedVehicle && (
+        {uiMode === "vin" && decodedVehicle && (
           <form onSubmit={handleSubmitDecoded} className="space-y-5">
             <div className="rounded-md border border-green-200 bg-green-50 p-3">
-              <p className="text-sm font-medium text-green-800">
-                {uiMode === "plate" ? t("vehicle.decodedPlateSuccess") : t("vehicle.decodedSuccess")}
-              </p>
+              <p className="text-sm font-medium text-green-800">{t("vehicle.decodedSuccess")}</p>
             </div>
 
             <div className="space-y-2">
@@ -406,7 +362,7 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
 
             <div className="flex gap-3">
               <Button type="button" variant="outline" onClick={handleResetDecoded} className="flex-1 bg-transparent">
-                {uiMode === "plate" ? t("vehicle.decodeAnotherPlate") : t("vehicle.decodeAnother")}
+                {t("vehicle.decodeAnother")}
               </Button>
               <Button type="submit" className="flex-1">
                 {t("common.continue")}

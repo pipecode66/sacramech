@@ -1,4 +1,5 @@
 import type { TranslationKey } from "@/lib/i18n"
+import { BOOKING_SERVICE_OPTIONS, getServiceLabelKeyById } from "@/lib/service-options"
 
 export type ReviewStatus = "pending" | "approved" | "rejected"
 
@@ -23,16 +24,10 @@ export interface PublicReview {
   created_at: string
 }
 
-export const REVIEW_SERVICE_OPTIONS = [
-  { id: "oil-change", labelKey: "service.oilChange" },
-  { id: "battery-replacement", labelKey: "service.battery" },
-  { id: "brake-service", labelKey: "service.brake" },
-  { id: "ac-repair", labelKey: "service.ac" },
-  { id: "tire-service", labelKey: "service.tire" },
-  { id: "engine-repair", labelKey: "service.engine" },
-  { id: "general-maintenance", labelKey: "service.maintenance" },
-  { id: "full-diagnostic", labelKey: "service.diagnostic" },
-] as const
+export const REVIEW_SERVICE_OPTIONS = BOOKING_SERVICE_OPTIONS.map((service) => ({
+  id: service.id,
+  labelKey: service.labelKey,
+})) as ReadonlyArray<{ id: string; labelKey: TranslationKey }>
 
 export function getReviewServiceLabel(
   serviceType: string | null | undefined,
@@ -40,6 +35,6 @@ export function getReviewServiceLabel(
 ) {
   if (!serviceType) return null
 
-  const matchedService = REVIEW_SERVICE_OPTIONS.find((option) => option.id === serviceType)
-  return matchedService ? t(matchedService.labelKey) : serviceType
+  const labelKey = getServiceLabelKeyById(serviceType)
+  return labelKey ? t(labelKey) : serviceType
 }
