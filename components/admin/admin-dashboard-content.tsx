@@ -7,9 +7,8 @@ import { KanbanBoard } from "./kanban-board"
 import { MechanicAssignmentPanel } from "./mechanic-assignment-panel"
 import { AdminSettingsPanel } from "./admin-settings-panel"
 import { ReviewModerationPanel } from "./review-moderation-panel"
-import { PartsQuotePanel } from "./parts-quote-panel"
 import { Button } from "@/components/ui/button"
-import { Wrench, LogOut, Calendar, Users, Clock, CheckCircle2, Settings, MessageSquareQuote, PackageSearch } from "lucide-react"
+import { Wrench, LogOut, Calendar, Users, Clock, CheckCircle2, Settings, MessageSquareQuote } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useI18n } from "@/lib/i18n"
@@ -44,28 +43,11 @@ interface Technician {
   specialties?: string[] | null
 }
 
-interface AppointmentPartQuote {
-  id: string
-  appointment_id: string
-  supplier_name: string
-  part_name: string
-  part_category: string | null
-  part_number: string | null
-  unit_price: number | null
-  rating: number | null
-  popularity_score: number | null
-  source_url: string | null
-  notes: string | null
-  search_query: string | null
-  created_at: string
-}
-
 interface AdminDashboardContentProps {
   appointments: Appointment[]
   reviews: ReviewRecord[]
   technicians: Technician[]
   serviceZipCodes: string[]
-  partQuotes: AppointmentPartQuote[]
   totalCount: number
   pendingCount: number
   completedCount: number
@@ -92,7 +74,6 @@ export function AdminDashboardContent({
   reviews,
   technicians,
   serviceZipCodes,
-  partQuotes,
   totalCount,
   pendingCount,
   completedCount,
@@ -180,10 +161,6 @@ export function AdminDashboardContent({
               <MessageSquareQuote className="w-3 h-3" />
               {t("admin.dashboard.reviews.tab")}
             </TabsTrigger>
-            <TabsTrigger value="parts" className="flex items-center gap-1">
-              <PackageSearch className="w-3 h-3" />
-              Parts
-            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-1">
               <Settings className="w-3 h-3" />
               Settings
@@ -228,16 +205,6 @@ export function AdminDashboardContent({
               </p>
             </div>
             <ReviewModerationPanel reviews={reviews} />
-          </TabsContent>
-
-          <TabsContent value="parts" className="space-y-4">
-            <div>
-              <h2 className="mb-2 text-xl font-bold text-foreground sm:text-2xl">Parts quotes and comparison</h2>
-              <p className="text-xs text-muted-foreground sm:text-sm">
-                Save replacement-part quotes against specific appointments and keep a searchable history for the admin team.
-              </p>
-            </div>
-            <PartsQuotePanel appointments={allAppointments} quotes={partQuotes} />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">

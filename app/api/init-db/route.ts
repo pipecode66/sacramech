@@ -26,12 +26,7 @@ export async function GET() {
       .select("zip_code")
       .limit(1)
 
-    const { error: partQuotesError } = await supabase
-      .from("appointment_part_quotes")
-      .select("id")
-      .limit(1)
-
-    if (error || reviewsError || techniciansError || serviceZipCodesError || partQuotesError) {
+    if (error || reviewsError || techniciansError || serviceZipCodesError) {
       return NextResponse.json({
         status: "migration_needed",
         message: "Database updates are missing. Please run this SQL in your Supabase Dashboard SQL Editor:",
@@ -81,27 +76,6 @@ CREATE TABLE IF NOT EXISTS service_zip_codes (
 ALTER TABLE service_zip_codes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all operations on service_zip_codes" ON service_zip_codes;
 CREATE POLICY "Allow all operations on service_zip_codes" ON service_zip_codes
-  FOR ALL USING (true) WITH CHECK (true);
-
-CREATE TABLE IF NOT EXISTS appointment_part_quotes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  appointment_id UUID NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
-  supplier_name TEXT NOT NULL DEFAULT 'O''Reilly Auto Parts',
-  part_name TEXT NOT NULL,
-  part_category TEXT,
-  part_number TEXT,
-  unit_price NUMERIC(10, 2) NOT NULL,
-  rating NUMERIC(3, 1),
-  popularity_score INTEGER,
-  source_url TEXT,
-  notes TEXT,
-  search_query TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER TABLE appointment_part_quotes ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow all operations on appointment_part_quotes" ON appointment_part_quotes;
-CREATE POLICY "Allow all operations on appointment_part_quotes" ON appointment_part_quotes
   FOR ALL USING (true) WITH CHECK (true);`
       })
     }

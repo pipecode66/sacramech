@@ -82,41 +82,22 @@ CREATE TABLE IF NOT EXISTS service_zip_codes (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 8. Create appointment parts quotes table
-CREATE TABLE IF NOT EXISTS appointment_part_quotes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  appointment_id UUID NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
-  supplier_name TEXT NOT NULL DEFAULT 'O''Reilly Auto Parts',
-  part_name TEXT NOT NULL,
-  part_category TEXT,
-  part_number TEXT,
-  unit_price NUMERIC(10, 2) NOT NULL,
-  rating NUMERIC(3, 1),
-  popularity_score INTEGER,
-  source_url TEXT,
-  notes TEXT,
-  search_query TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 9. Enable Row Level Security
+-- 8. Enable Row Level Security
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE zip_code_waitlist ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
 ALTER TABLE service_zip_codes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE appointment_part_quotes ENABLE ROW LEVEL SECURITY;
 
--- 10. Drop existing policies if they exist (to avoid conflicts)
+-- 9. Drop existing policies if they exist (to avoid conflicts)
 DROP POLICY IF EXISTS "Allow all operations on appointments" ON appointments;
 DROP POLICY IF EXISTS "Allow select on admin_users" ON admin_users;
 DROP POLICY IF EXISTS "Allow all operations on zip_code_waitlist" ON zip_code_waitlist;
 DROP POLICY IF EXISTS "Allow all operations on technicians" ON technicians;
 DROP POLICY IF EXISTS "Allow all operations on service_zip_codes" ON service_zip_codes;
-DROP POLICY IF EXISTS "Allow all operations on appointment_part_quotes" ON appointment_part_quotes;
 
--- 11. Recreate policies
+-- 10. Recreate policies
 CREATE POLICY "Allow all operations on appointments" ON appointments
   FOR ALL USING (true) WITH CHECK (true);
 
@@ -132,16 +113,7 @@ CREATE POLICY "Allow all operations on technicians" ON technicians
 CREATE POLICY "Allow all operations on service_zip_codes" ON service_zip_codes
   FOR ALL USING (true) WITH CHECK (true);
 
-CREATE POLICY "Allow all operations on appointment_part_quotes" ON appointment_part_quotes
-  FOR ALL USING (true) WITH CHECK (true);
-
-CREATE INDEX IF NOT EXISTS appointment_part_quotes_appointment_id_idx
-  ON appointment_part_quotes (appointment_id);
-
-CREATE INDEX IF NOT EXISTS appointment_part_quotes_created_at_idx
-  ON appointment_part_quotes (created_at DESC);
-
--- 12. Insert default admin user (password: admin0815)
+-- 11. Insert default admin user (password: admin0815)
 -- Using a proper bcrypt hash for 'admin0815'
 INSERT INTO admin_users (email, password_hash) 
 VALUES (
@@ -150,7 +122,7 @@ VALUES (
 )
 ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
--- 13. Seed default technicians
+-- 12. Seed default technicians
 INSERT INTO technicians (name, area, phone, availability, specialties)
 SELECT 'Carlos Rodriguez', 'Central Sacramento', '+19165550101', 'available', ARRAY['Oil Change', 'Battery', 'Brakes']
 WHERE NOT EXISTS (SELECT 1 FROM technicians WHERE name = 'Carlos Rodriguez');
