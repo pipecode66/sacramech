@@ -9,7 +9,7 @@ const geist = Geist({ subsets: ["latin"] });
 const geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Rapi Mobile Mechanic | Mobile Mechanic Services',
+  title: 'Rapi Mobile Mechanic | Mobile Mechanic Services in Sacramento',
   description: 'Professional mobile mechanic services in Sacramento. We come to you! Book your appointment today.',
   generator: 'v0.app',
   icons: {
