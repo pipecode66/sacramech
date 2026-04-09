@@ -40,6 +40,14 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
           </div>
         </section>
 
+        <ReviewsSection
+          initialData={initialReviews}
+          showHeading={false}
+          showShowcase
+          showForm={false}
+          sectionClassName="border-t-0 bg-transparent pt-0 pb-16"
+        />
+
         <section className="py-12 bg-primary text-primary-foreground">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-6 text-center md:text-left">
@@ -121,7 +129,12 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
           </div>
         </section>
 
-        <ReviewsSection initialData={initialReviews} />
+        <ReviewsSection
+          initialData={initialReviews}
+          showHeading={false}
+          showShowcase={false}
+          showForm
+        />
       </main>
 
       <footer className="bg-card border-t py-8">
