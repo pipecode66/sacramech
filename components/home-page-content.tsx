@@ -29,11 +29,8 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
       <main className="flex-1">
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-foreground mb-3">{t("booking.title")}</h2>
-              <p className="text-muted-foreground max-w-lg mx-auto">
-                {t("booking.subtitle")}
-              </p>
+            <div className="text-center mb-6 md:mb-8">
+              <h2 className="text-3xl font-bold text-foreground">{t("booking.title")}</h2>
             </div>
 
             <BookingFlow onResetRef={resetRef} serviceZipCodes={serviceZipCodes} />
