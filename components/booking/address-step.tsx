@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Home, ArrowLeft, AlertCircle, Loader2 } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { validateAddressFormat } from "@/lib/address-validation"
-import { ZIP_CODE_TO_INFO } from "@/lib/sacramento-zip-codes"
 
 interface AddressStepProps {
   zipCode: string
@@ -19,19 +18,49 @@ interface AddressStepProps {
 export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
   const { t } = useI18n()
   const [street, setStreet] = useState("")
-  const [city, setCity] = useState("Sacramento")
+  const [city, setCity] = useState("")
   const [isValidating, setIsValidating] = useState(false)
+  const [isLoadingCity, setIsLoadingCity] = useState(false)
   const [validationErrorCode, setValidationErrorCode] = useState<string | null>(null)
 
-  // Auto-detect city from ZIP code
-  const zipInfo = ZIP_CODE_TO_INFO[zipCode]
-  const defaultCity = zipInfo?.cities[0] ?? "Sacramento"
-
   useEffect(() => {
-    setCity(defaultCity)
-  }, [defaultCity])
+    let isCancelled = false
 
-  const fullAddress = `${street}, ${city}, CA ${zipCode}`
+    const loadCity = async () => {
+      setIsLoadingCity(true)
+      try {
+        const response = await fetch(`/api/zip-city?zipCode=${encodeURIComponent(zipCode)}`, {
+          cache: "no-store",
+        })
+
+        if (!response.ok) {
+          throw new Error("Could not resolve city for ZIP code.")
+        }
+
+        const result = (await response.json()) as { city?: string | null }
+        if (!isCancelled) {
+          setCity(result.city?.trim() || "")
+        }
+      } catch (error) {
+        console.warn("Could not auto-resolve city from ZIP code:", error)
+        if (!isCancelled) {
+          setCity("")
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingCity(false)
+        }
+      }
+    }
+
+    void loadCity()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [zipCode])
+
+  const fullAddress = city ? `${street}, ${city}, CA ${zipCode}` : `${street}, CA ${zipCode}`
 
   const getErrorMessage = (error: string | undefined): string => {
     if (!error) return t("address.validationError")
@@ -99,7 +128,7 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
         return
       }
 
-      const validatedCity = result.city || defaultCity
+      const validatedCity = result.city || city
       setCity(validatedCity)
       onNext(result.normalizedAddress || `${trimmedStreet}, ${validatedCity}, CA ${zipCode}`)
     } catch (error) {
@@ -143,6 +172,7 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
                 type="text"
                 value={city}
                 disabled
+                placeholder={isLoadingCity ? "Resolving city..." : ""}
                 className="bg-muted"
               />
             </div>
@@ -157,7 +187,7 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
             <Input type="text" value={zipCode} disabled className="bg-muted" />
           </div>
 
-          {street && (
+          {street && city && (
             <div className="p-3 bg-muted rounded-lg text-sm">
               <p className="font-medium text-muted-foreground">{t("address.fullAddress")}</p>
               <p className="text-foreground">{fullAddress}</p>
@@ -176,11 +206,16 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t("common.back")}
             </Button>
-            <Button type="submit" className="flex-1" disabled={!street.trim() || isValidating}>
+            <Button type="submit" className="flex-1" disabled={!street.trim() || isValidating || isLoadingCity}>
               {isValidating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   {t("address.validating")}
+                </>
+              ) : isLoadingCity ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Resolving city...
                 </>
               ) : (
                 t("common.continue")

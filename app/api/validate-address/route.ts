@@ -1,6 +1,6 @@
 import { validateAddressFormat } from "@/lib/address-validation"
-import { ZIP_CODE_TO_INFO } from "@/lib/sacramento-zip-codes"
 import { NextResponse } from "next/server"
+import { normalizeZipCode, resolveCityForZip } from "@/lib/zip-city"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,7 +39,7 @@ interface AddressValidationResponse {
 // ---------------------------------------------------------------------------
 
 function normalizeZip(value: string): string {
-  return value.replace(/\D/g, "").slice(0, 5)
+  return normalizeZipCode(value)
 }
 
 /**
@@ -74,8 +74,7 @@ async function validateWithNominatim(
   street: string,
   zipCode: string
 ): Promise<AddressValidationResponse> {
-  const zipInfo = ZIP_CODE_TO_INFO[zipCode]
-  const fallbackCity = zipInfo?.cities[0] ?? "Sacramento"
+  const fallbackCity = (await resolveCityForZip(zipCode)) ?? "Sacramento"
 
   // Build the Nominatim structured search URL
   // We intentionally omit the city from the query so Nominatim resolves it
