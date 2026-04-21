@@ -364,7 +364,7 @@ export function ReviewsSection({
   return (
     <section
       id="reviews"
-      className={`border-t border-border/60 bg-[linear-gradient(180deg,rgba(6,54,124,0.03),rgba(255,255,255,0))] py-20 ${sectionClassName}`.trim()}
+      className={`border-t border-border/60 bg-[linear-gradient(180deg,rgba(216,41,24,0.03),rgba(244,186,22,0.02),rgba(255,255,255,0))] py-20 ${sectionClassName}`.trim()}
     >
       <div className="container mx-auto px-4">
         {showHeading && (

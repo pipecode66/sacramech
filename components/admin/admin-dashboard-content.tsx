@@ -84,7 +84,7 @@ export function AdminDashboardContent({
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="sticky top-0 z-10 border-b border-border/70 bg-card/95 shadow-[0_10px_35px_rgba(10,24,58,0.06)] backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-border/70 bg-card/95 shadow-[0_12px_36px_rgba(150,38,21,0.08)] backdrop-blur">
         <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
           <Link href="/" className="transition-opacity hover:opacity-85">
             <BrandLogo

@@ -17,21 +17,30 @@ export function Header({ onLogoClick }: HeaderProps = {}) {
     setLocale(locale === "en" ? "es" : "en")
   }
 
-  const logoContent = <BrandLogo title={t("header.title")} subtitle={t("header.subtitle")} priority />
+  const logoContent = (
+    <BrandLogo
+      title={t("header.title")}
+      subtitle={t("header.subtitle")}
+      className="gap-3.5"
+      imageWrapperClassName="h-14 w-14 rounded-[1.6rem] border-2 border-accent/55 shadow-[0_20px_46px_rgba(216,41,24,0.18)] sm:h-16 sm:w-16"
+      titleClassName="text-xl font-black sm:text-2xl"
+      subtitleClassName="text-[11px] font-medium tracking-[0.02em] sm:text-xs"
+      priority
+    />
+  )
+
+  const brandClassName =
+    "rounded-[1.75rem] border border-border/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(255,240,207,0.94))] px-2.5 py-1.5 shadow-[0_16px_34px_rgba(150,38,21,0.1)] transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_40px_rgba(150,38,21,0.15)]"
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-card/95 shadow-[0_10px_35px_rgba(10,24,58,0.06)] backdrop-blur">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-card/95 shadow-[0_12px_36px_rgba(150,38,21,0.08)] backdrop-blur">
+      <div className="container mx-auto flex items-center justify-between px-4 py-3 sm:py-4">
         {onLogoClick ? (
-          <button
-            onClick={onLogoClick}
-            className="cursor-pointer transition-opacity hover:opacity-85"
-            aria-label="Return to start"
-          >
+          <button onClick={onLogoClick} className={brandClassName} aria-label="Return to start">
             {logoContent}
           </button>
         ) : (
-          <Link href="/" className="transition-opacity hover:opacity-85">
+          <Link href="/" className={brandClassName}>
             {logoContent}
           </Link>
         )}
@@ -43,12 +52,12 @@ export function Header({ onLogoClick }: HeaderProps = {}) {
             onClick={toggleLocale}
             className="flex items-center gap-1.5 bg-transparent text-xs font-medium"
           >
-            <Globe className="w-4 h-4" />
+            <Globe className="h-4 w-4" />
             {locale === "en" ? "ESPAÑOL" : "ENGLISH"}
           </Button>
           <Link href="/admin/login">
             <Button variant="ghost" size="icon" className="rounded-full">
-              <User className="w-5 h-5" />
+              <User className="h-5 w-5" />
               <span className="sr-only">Admin Login</span>
             </Button>
           </Link>

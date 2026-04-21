@@ -71,7 +71,7 @@ export function BookingFeedbackCard({
   }
 
   return (
-    <Card className="border-primary/15 bg-[linear-gradient(135deg,rgba(12,74,110,0.05),rgba(255,255,255,0.92))] shadow-sm">
+    <Card className="border-primary/15 bg-[linear-gradient(135deg,rgba(216,41,24,0.05),rgba(255,246,232,0.96))] shadow-sm">
       <CardHeader className="space-y-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <MessageSquareQuote className="h-6 w-6" />
