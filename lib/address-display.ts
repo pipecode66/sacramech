@@ -69,7 +69,7 @@ export function parseStoredAddress(address: string, fallbackZipCode?: string | n
 
   const streetLine = streetParts.join(", ") || addressParts[0] || normalizedAddress
   const stateAndZip = [state, zipCode].filter(Boolean).join(" ")
-  const locationSummary = [city, county, stateAndZip].filter(Boolean).join(" • ") || null
+  const locationSummary = [city, county, stateAndZip].filter(Boolean).join(" | ") || null
 
   return {
     streetLine,
