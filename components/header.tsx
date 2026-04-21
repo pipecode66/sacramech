@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { Wrench, User, Globe } from "lucide-react"
+import { User, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n"
+import { BrandLogo } from "@/components/brand-logo"
 
 interface HeaderProps {
   onLogoClick?: () => void
@@ -16,31 +17,21 @@ export function Header({ onLogoClick }: HeaderProps = {}) {
     setLocale(locale === "en" ? "es" : "en")
   }
 
-  const logoContent = (
-    <>
-      <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-        <Wrench className="w-6 h-6 text-primary-foreground" />
-      </div>
-      <div>
-        <h1 className="font-bold text-lg text-foreground">{t("header.title")}</h1>
-        <p className="text-xs text-muted-foreground">{t("header.subtitle")}</p>
-      </div>
-    </>
-  )
+  const logoContent = <BrandLogo title={t("header.title")} subtitle={t("header.subtitle")} priority />
 
   return (
-    <header className="w-full border-b bg-card sticky top-0 z-50">
+    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-card/95 shadow-[0_10px_35px_rgba(10,24,58,0.06)] backdrop-blur">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {onLogoClick ? (
           <button
             onClick={onLogoClick}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+            className="cursor-pointer transition-opacity hover:opacity-85"
             aria-label="Return to start"
           >
             {logoContent}
           </button>
         ) : (
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="transition-opacity hover:opacity-85">
             {logoContent}
           </Link>
         )}

@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 import { LoginForm } from "@/components/admin/login-form"
 import { getAdminSession } from "@/app/admin/actions"
-import { Wrench, ArrowLeft } from "lucide-react"
+import { BrandLogo } from "@/components/brand-logo"
 import { Button } from "@/components/ui/button"
 
 export default async function AdminLoginPage() {
@@ -13,28 +14,27 @@ export default async function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col">
+    <div className="flex min-h-screen flex-col bg-muted/30">
       <header className="p-4">
         <Link href="/">
           <Button variant="ghost" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Volver al Inicio / Back to Home
           </Button>
         </Link>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex flex-1 items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-2">
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-                <Wrench className="w-7 h-7 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="font-bold text-xl text-foreground">Rapi Mobile Mechanic</h1>
-                <p className="text-sm text-muted-foreground">Portal de Administración / Admin Portal</p>
-              </div>
-            </div>
+          <div className="mb-8 flex justify-center">
+            <BrandLogo
+              title="Rapi Mobile Mechanic"
+              subtitle="Portal de Administración / Admin Portal"
+              imageWrapperClassName="h-14 w-14"
+              titleClassName="text-xl"
+              subtitleClassName="text-sm"
+              priority
+            />
           </div>
 
           <LoginForm />

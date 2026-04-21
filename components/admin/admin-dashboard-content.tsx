@@ -8,12 +8,13 @@ import { MechanicAssignmentPanel } from "./mechanic-assignment-panel"
 import { AdminSettingsPanel } from "./admin-settings-panel"
 import { ReviewModerationPanel } from "./review-moderation-panel"
 import { Button } from "@/components/ui/button"
-import { Wrench, LogOut, Calendar, Users, Clock, CheckCircle2, Settings, MessageSquareQuote } from "lucide-react"
+import { LogOut, Calendar, Users, Clock, CheckCircle2, Settings, MessageSquareQuote } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useI18n } from "@/lib/i18n"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import type { ReviewRecord } from "@/lib/reviews"
+import { BrandLogo } from "@/components/brand-logo"
 
 interface Appointment {
   id: string
@@ -83,16 +84,17 @@ export function AdminDashboardContent({
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="bg-card border-b sticky top-0 z-10">
+      <header className="sticky top-0 z-10 border-b border-border/70 bg-card/95 shadow-[0_10px_35px_rgba(10,24,58,0.06)] backdrop-blur">
         <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Wrench className="w-4 h-4 sm:w-6 sm:h-6 text-primary-foreground" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-bold text-lg text-foreground">Rapi Mobile Mechanic</h1>
-              <p className="text-xs text-muted-foreground">{t("admin.dashboard.title")}</p>
-            </div>
+          <Link href="/" className="transition-opacity hover:opacity-85">
+            <BrandLogo
+              title="Rapi Mobile Mechanic"
+              subtitle={t("admin.dashboard.title")}
+              imageWrapperClassName="h-10 w-10 sm:h-11 sm:w-11"
+              className="gap-2"
+              titleClassName="hidden text-lg sm:block"
+              subtitleClassName="hidden sm:block"
+            />
           </Link>
 
           <div className="flex items-center gap-2">
