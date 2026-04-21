@@ -26,7 +26,7 @@ export function BrandLogo({
     <div className={cn("flex items-center gap-3", className)}>
       <div
         className={cn(
-          "relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border-2 border-accent/40 bg-[linear-gradient(145deg,#fffef9,#fff1ca)] shadow-[0_16px_40px_rgba(150,38,21,0.16)]",
+          "relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-border/70 bg-white shadow-[0_10px_30px_rgba(10,24,58,0.12)]",
           imageWrapperClassName,
         )}
       >
@@ -35,7 +35,7 @@ export function BrandLogo({
           alt="Rapi Mobile Mechanic logo"
           fill
           priority={priority}
-          className="object-contain p-1"
+          className="object-contain p-1.5"
           sizes="64px"
         />
       </div>

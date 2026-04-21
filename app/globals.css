@@ -5,72 +5,72 @@
 
 :root {
   --background: #fff9f2;
-  --foreground: #27150f;
+  --foreground: #111c3b;
   --card: #ffffff;
-  --card-foreground: #27150f;
+  --card-foreground: #111c3b;
   --popover: #ffffff;
-  --popover-foreground: #27150f;
-  --primary: #d82918;
-  --primary-foreground: #fffaf5;
-  --secondary: #fff0cf;
-  --secondary-foreground: #3d1b12;
-  --muted: #fff5e6;
-  --muted-foreground: #7d6355;
+  --popover-foreground: #111c3b;
+  --primary: #123b8f;
+  --primary-foreground: #ffffff;
+  --secondary: #fff0c2;
+  --secondary-foreground: #0d1a3a;
+  --muted: #fff4de;
+  --muted-foreground: #5f6782;
   --accent: #f4ba16;
-  --accent-foreground: #2f180e;
-  --destructive: #b91f14;
-  --destructive-foreground: #fff5f1;
-  --border: #ecd9c8;
-  --input: #ecd9c8;
-  --ring: #ef981e;
-  --chart-1: #d82918;
-  --chart-2: #f4ba16;
-  --chart-3: #ff7b23;
-  --chart-4: #7a1d11;
-  --chart-5: #ffd36a;
+  --accent-foreground: #161d32;
+  --destructive: #dc2f1f;
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: #eadfcb;
+  --input: #eadfcb;
+  --ring: #f08a1b;
+  --chart-1: #123b8f;
+  --chart-2: #dc2f1f;
+  --chart-3: #f4ba16;
+  --chart-4: #1f5ed8;
+  --chart-5: #ff7b23;
   --radius: 0.625rem;
   --sidebar: #fffaf4;
-  --sidebar-foreground: #27150f;
-  --sidebar-primary: #d82918;
-  --sidebar-primary-foreground: #fffaf5;
-  --sidebar-accent: #fff0cf;
-  --sidebar-accent-foreground: #27150f;
-  --sidebar-border: #ecd9c8;
-  --sidebar-ring: #ef981e;
+  --sidebar-foreground: #111c3b;
+  --sidebar-primary: #123b8f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fff0c2;
+  --sidebar-accent-foreground: #111c3b;
+  --sidebar-border: #eadfcb;
+  --sidebar-ring: #f08a1b;
 }
 
 .dark {
-  --background: #190d0a;
-  --foreground: #fff4e7;
-  --card: #24110d;
-  --card-foreground: #fff4e7;
-  --popover: #24110d;
-  --popover-foreground: #fff4e7;
-  --primary: #ff6b2c;
-  --primary-foreground: #fff6ef;
-  --secondary: #3d1d16;
-  --secondary-foreground: #fff4e7;
-  --muted: #301813;
-  --muted-foreground: #d2b8aa;
-  --accent: #f4ba16;
-  --accent-foreground: #2c160d;
+  --background: #091126;
+  --foreground: #f9f6ef;
+  --card: #0d1733;
+  --card-foreground: #f9f6ef;
+  --popover: #0d1733;
+  --popover-foreground: #f9f6ef;
+  --primary: #f4ba16;
+  --primary-foreground: #111c3b;
+  --secondary: #1a274f;
+  --secondary-foreground: #f9f6ef;
+  --muted: #16213f;
+  --muted-foreground: #b9c0d5;
+  --accent: #ff7b23;
+  --accent-foreground: #fffaf4;
   --destructive: #ff5c4d;
   --destructive-foreground: #fff5f3;
-  --border: #523126;
-  --input: #523126;
+  --border: #20305b;
+  --input: #20305b;
   --ring: #f4ba16;
-  --chart-1: #ff6b2c;
-  --chart-2: #f4ba16;
-  --chart-3: #ff8f3f;
+  --chart-1: #f4ba16;
+  --chart-2: #ff7b23;
+  --chart-3: #4f8dff;
   --chart-4: #ff5c4d;
-  --chart-5: #ffd36a;
-  --sidebar: #24110d;
-  --sidebar-foreground: #fff4e7;
-  --sidebar-primary: #ff6b2c;
-  --sidebar-primary-foreground: #fff6ef;
-  --sidebar-accent: #3d1d16;
-  --sidebar-accent-foreground: #fff4e7;
-  --sidebar-border: #523126;
+  --chart-5: #ffe28a;
+  --sidebar: #0d1733;
+  --sidebar-foreground: #f9f6ef;
+  --sidebar-primary: #f4ba16;
+  --sidebar-primary-foreground: #111c3b;
+  --sidebar-accent: #1a274f;
+  --sidebar-accent-foreground: #f9f6ef;
+  --sidebar-border: #20305b;
   --sidebar-ring: #f4ba16;
 }
 
@@ -124,7 +124,7 @@
     @apply bg-background text-foreground;
     background-image:
       radial-gradient(circle at top, rgba(244, 186, 22, 0.14), transparent 30%),
-      linear-gradient(180deg, rgba(216, 41, 24, 0.04), rgba(244, 186, 22, 0.06) 58%, rgba(255, 255, 255, 0));
+      linear-gradient(180deg, rgba(18, 59, 143, 0.03), rgba(220, 47, 31, 0.015) 55%, rgba(255, 255, 255, 0));
   }
 }
 
@@ -138,9 +138,9 @@ body>a[target="_blank"][rel="noopener noreferrer"] {
   display: none !important;
 }
 
-/* Override SelectItem hover/focus color to match brand red */
+/* Override SelectItem hover/focus color to match brand blue */
 [data-radix-popper-content-wrapper] [role="option"][data-highlighted],
 [data-radix-select-viewport] [role="option"][data-highlighted] {
-  background-color: rgba(216, 41, 24, 0.12) !important;
-  color: #8a2114 !important;
+  background-color: rgba(18, 59, 143, 0.12) !important;
+  color: #0f2f75 !important;
 }
