@@ -36,6 +36,7 @@ import { deleteAppointment, updateAppointmentStatus } from "@/app/admin/actions"
 import { useRouter } from "next/navigation"
 import { useI18n } from "@/lib/i18n"
 import { formatLocalDate, parseLocalDate } from "@/lib/date-utils"
+import { parseStoredAddress } from "@/lib/address-display"
 
 interface Appointment {
   id: string
@@ -89,6 +90,7 @@ export function AppointmentCard({ appointment, isDragging }: AppointmentCardProp
   const createdDate = new Date(appointment.created_at)
   const appointmentDateLabel = formatLocalDate(appointment.appointment_date)
   const bookedDateLabel = format(createdDate, "MM/dd/yyyy")
+  const parsedAddress = parseStoredAddress(appointment.address, appointment.zip_code)
 
   // Format the time slot if available
   const formatTimeSlot = (time?: string) => {
@@ -175,8 +177,15 @@ export function AppointmentCard({ appointment, isDragging }: AppointmentCardProp
             </div>
           )}
           <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
-            <span className="truncate">{appointment.address}</span>
+            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <span className="block truncate">{parsedAddress.streetLine || appointment.address}</span>
+              {parsedAddress.locationSummary && (
+                <span className="block truncate text-[11px] sm:text-xs text-muted-foreground/90">
+                  {parsedAddress.locationSummary}
+                </span>
+              )}
+            </div>
           </div>
           <div className="md:hidden pt-1" onClick={(event) => event.stopPropagation()}>
             <Select value={appointment.status} onValueChange={(value) => void handleStatusChange(value)} disabled={isUpdatingStatus}>
@@ -297,7 +306,29 @@ export function AppointmentCard({ appointment, isDragging }: AppointmentCardProp
               <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm text-muted-foreground">{t("appt.serviceLocation")}</p>
-                <p className="font-medium text-sm sm:text-base break-words">{appointment.address}</p>
+                <p className="font-medium text-sm sm:text-base break-words">
+                  {parsedAddress.streetLine || appointment.address}
+                </p>
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {parsedAddress.city && (
+                    <div className="rounded-md border bg-background/80 px-3 py-2">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("address.city")}</p>
+                      <p className="text-sm font-medium">{parsedAddress.city}</p>
+                    </div>
+                  )}
+                  {parsedAddress.county && (
+                    <div className="rounded-md border bg-background/80 px-3 py-2">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("address.county")}</p>
+                      <p className="text-sm font-medium">{parsedAddress.county}</p>
+                    </div>
+                  )}
+                  {parsedAddress.state && (
+                    <div className="rounded-md border bg-background/80 px-3 py-2 sm:col-span-2">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("address.state")}</p>
+                      <p className="text-sm font-medium">{parsedAddress.state}</p>
+                    </div>
+                  )}
+                </div>
                 {appointment.additional_info && (
                   <p className="text-xs sm:text-sm text-muted-foreground mt-2 whitespace-pre-wrap">
                     <span className="font-medium">{t("appt.additionalInfo")}:</span> {appointment.additional_info}
