@@ -7,14 +7,62 @@ interface NominatimZipResult {
     village?: string
     suburb?: string
     county?: string
+    state?: string
     postcode?: string
   }
 }
 
-const zipCityCache = new Map<string, string>()
+export interface ZipLocation {
+  city: string | null
+  county: string | null
+  state: string | null
+}
+
+const DEFAULT_STATE = "California"
+
+const CITY_TO_COUNTY: Record<string, string> = {
+  Sacramento: "Sacramento County",
+  Antelope: "Sacramento County",
+  Carmichael: "Sacramento County",
+  "Citrus Heights": "Sacramento County",
+  "Elk Grove": "Sacramento County",
+  "Fair Oaks": "Sacramento County",
+  "North Highlands": "Sacramento County",
+  Orangevale: "Sacramento County",
+  "Rancho Cordova": "Sacramento County",
+  "West Sacramento": "Yolo County",
+  Folsom: "Sacramento County",
+}
+
+const zipLocationCache = new Map<string, ZipLocation>()
 
 export function normalizeZipCode(value: string): string {
   return value.replace(/\D/g, "").slice(0, 5)
+}
+
+function createZipLocation(location?: Partial<ZipLocation> | null): ZipLocation {
+  return {
+    city: location?.city ?? null,
+    county: location?.county ?? null,
+    state: location?.state ?? null,
+  }
+}
+
+function hasLocationValue(location: ZipLocation | null | undefined): boolean {
+  return Boolean(location?.city || location?.county || location?.state)
+}
+
+function mergeLocations(...locations: Array<ZipLocation | null | undefined>): ZipLocation | null {
+  const merged = locations.reduce<ZipLocation>(
+    (current, location) => ({
+      city: location?.city ?? current.city,
+      county: location?.county ?? current.county,
+      state: location?.state ?? current.state,
+    }),
+    createZipLocation()
+  )
+
+  return hasLocationValue(merged) ? merged : null
 }
 
 function extractCity(address: NominatimZipResult["address"]): string | null {
@@ -30,12 +78,44 @@ function extractCity(address: NominatimZipResult["address"]): string | null {
   )
 }
 
-function getStaticCityForZip(zipCode: string): string | null {
-  const normalizedZip = normalizeZipCode(zipCode)
-  return ZIP_CODE_TO_INFO[normalizedZip]?.cities[0] ?? null
+function extractCounty(address: NominatimZipResult["address"]): string | null {
+  return address?.county ?? null
 }
 
-async function lookupCityWithNominatim(zipCode: string): Promise<string | null> {
+function extractState(address: NominatimZipResult["address"]): string | null {
+  return address?.state ?? null
+}
+
+function extractLocation(address: NominatimZipResult["address"]): ZipLocation | null {
+  const location = createZipLocation({
+    city: extractCity(address),
+    county: extractCounty(address),
+    state: extractState(address),
+  })
+
+  return hasLocationValue(location) ? location : null
+}
+
+function getCountyForCity(city: string | null): string | null {
+  if (!city) return null
+  return CITY_TO_COUNTY[city] ?? null
+}
+
+function getStaticLocationForZip(zipCode: string): ZipLocation | null {
+  const normalizedZip = normalizeZipCode(zipCode)
+  const city = ZIP_CODE_TO_INFO[normalizedZip]?.cities[0] ?? null
+  if (!city) {
+    return null
+  }
+
+  return createZipLocation({
+    city,
+    county: getCountyForCity(city),
+    state: DEFAULT_STATE,
+  })
+}
+
+async function lookupLocationWithNominatim(zipCode: string): Promise<ZipLocation | null> {
   const params = new URLSearchParams({
     postalcode: zipCode,
     country: "US",
@@ -67,41 +147,65 @@ async function lookupCityWithNominatim(zipCode: string): Promise<string | null> 
       continue
     }
 
-    const city = extractCity(result.address)
-    if (city) {
-      return city
+    const location = extractLocation(result.address)
+    if (location) {
+      return location
     }
   }
 
-  return extractCity(results[0]?.address)
+  return extractLocation(results[0]?.address)
 }
 
-export async function resolveCityForZip(zipCode: string): Promise<string | null> {
+export function formatResolvedAddress(street: string, location: ZipLocation | null, zipCode: string): string {
+  const normalizedStreet = street.trim()
+  const normalizedZip = normalizeZipCode(zipCode)
+
+  const parts = [normalizedStreet].filter(Boolean)
+  const cityAndCounty = [location?.city, location?.county].filter(Boolean).join(", ")
+  if (cityAndCounty) {
+    parts.push(cityAndCounty)
+  }
+
+  const stateAndZip = [location?.state, normalizedZip].filter(Boolean).join(" ")
+  if (stateAndZip) {
+    parts.push(stateAndZip)
+  }
+
+  return parts.join(", ")
+}
+
+export async function resolveLocationForZip(zipCode: string): Promise<ZipLocation | null> {
   const normalizedZip = normalizeZipCode(zipCode)
   if (normalizedZip.length !== 5) {
     return null
   }
 
-  const cachedCity = zipCityCache.get(normalizedZip)
-  if (cachedCity) {
-    return cachedCity
+  const cachedLocation = zipLocationCache.get(normalizedZip)
+  if (cachedLocation) {
+    return cachedLocation
   }
 
-  const staticCity = getStaticCityForZip(normalizedZip)
-  if (staticCity) {
-    zipCityCache.set(normalizedZip, staticCity)
-    return staticCity
-  }
+  const staticLocation = getStaticLocationForZip(normalizedZip)
 
   try {
-    const resolvedCity = await lookupCityWithNominatim(normalizedZip)
-    if (resolvedCity) {
-      zipCityCache.set(normalizedZip, resolvedCity)
-      return resolvedCity
+    const resolvedLocation = await lookupLocationWithNominatim(normalizedZip)
+    const mergedLocation = mergeLocations(staticLocation, resolvedLocation)
+    if (mergedLocation) {
+      zipLocationCache.set(normalizedZip, mergedLocation)
+      return mergedLocation
     }
   } catch (error) {
-    console.warn("[zip-city] Could not resolve city for ZIP:", normalizedZip, error)
+    console.warn("[zip-city] Could not resolve location for ZIP:", normalizedZip, error)
+  }
+
+  if (staticLocation) {
+    zipLocationCache.set(normalizedZip, staticLocation)
+    return staticLocation
   }
 
   return null
+}
+
+export async function resolveCityForZip(zipCode: string): Promise<string | null> {
+  return (await resolveLocationForZip(zipCode))?.city ?? null
 }

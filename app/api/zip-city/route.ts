@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { normalizeZipCode, resolveCityForZip } from "@/lib/zip-city"
+import { normalizeZipCode, resolveLocationForZip } from "@/lib/zip-city"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -10,10 +10,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid ZIP code." }, { status: 400 })
   }
 
-  const city = await resolveCityForZip(zipCode)
+  const location = await resolveLocationForZip(zipCode)
 
   return NextResponse.json({
     zipCode,
-    city,
+    city: location?.city ?? null,
+    county: location?.county ?? null,
+    state: location?.state ?? null,
   })
 }

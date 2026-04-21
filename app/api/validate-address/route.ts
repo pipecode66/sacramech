@@ -1,6 +1,6 @@
 import { validateAddressFormat } from "@/lib/address-validation"
 import { NextResponse } from "next/server"
-import { normalizeZipCode, resolveCityForZip } from "@/lib/zip-city"
+import { formatResolvedAddress, normalizeZipCode, resolveLocationForZip, type ZipLocation } from "@/lib/zip-city"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,6 +31,8 @@ interface AddressValidationResponse {
   valid: boolean
   error?: string
   city?: string
+  county?: string
+  state?: string
   normalizedAddress?: string
 }
 
@@ -57,6 +59,22 @@ function getCityFromNominatim(address: NominatimResult["address"]): string | nul
   )
 }
 
+function getCountyFromNominatim(address: NominatimResult["address"]): string | null {
+  return address.county ?? null
+}
+
+function getStateFromNominatim(address: NominatimResult["address"]): string | null {
+  return address.state ?? null
+}
+
+function createFallbackLocation(location?: ZipLocation | null): ZipLocation {
+  return {
+    city: location?.city ?? "Sacramento",
+    county: location?.county ?? "Sacramento County",
+    state: location?.state ?? "California",
+  }
+}
+
 /**
  * Normalize a ZIP code returned by Nominatim.
  * US postcodes are always 5-digit; strip extensions like "95630-1234".
@@ -74,7 +92,7 @@ async function validateWithNominatim(
   street: string,
   zipCode: string
 ): Promise<AddressValidationResponse> {
-  const fallbackCity = (await resolveCityForZip(zipCode)) ?? "Sacramento"
+  const fallbackLocation = createFallbackLocation(await resolveLocationForZip(zipCode))
 
   // Build the Nominatim structured search URL
   // We intentionally omit the city from the query so Nominatim resolves it
@@ -109,8 +127,10 @@ async function validateWithNominatim(
       // Nominatim is unreachable — degrade gracefully
       return {
         valid: true,
-        city: fallbackCity,
-        normalizedAddress: `${street}, ${fallbackCity}, CA ${zipCode}`,
+        city: fallbackLocation.city ?? undefined,
+        county: fallbackLocation.county ?? undefined,
+        state: fallbackLocation.state ?? undefined,
+        normalizedAddress: formatResolvedAddress(street, fallbackLocation, zipCode),
       }
     }
 
@@ -120,8 +140,10 @@ async function validateWithNominatim(
     // Network error — degrade gracefully
     return {
       valid: true,
-      city: fallbackCity,
-      normalizedAddress: `${street}, ${fallbackCity}, CA ${zipCode}`,
+      city: fallbackLocation.city ?? undefined,
+      county: fallbackLocation.county ?? undefined,
+      state: fallbackLocation.state ?? undefined,
+      normalizedAddress: formatResolvedAddress(street, fallbackLocation, zipCode),
     }
   }
 
@@ -141,12 +163,18 @@ async function validateWithNominatim(
     }
 
     // ZIP matches → extract city from result
-    const resolvedCity = getCityFromNominatim(result.address) ?? fallbackCity
+    const resolvedLocation = createFallbackLocation({
+      city: getCityFromNominatim(result.address) ?? fallbackLocation.city,
+      county: getCountyFromNominatim(result.address) ?? fallbackLocation.county,
+      state: getStateFromNominatim(result.address) ?? fallbackLocation.state,
+    })
 
     return {
       valid: true,
-      city: resolvedCity,
-      normalizedAddress: `${street}, ${resolvedCity}, CA ${zipCode}`,
+      city: resolvedLocation.city ?? undefined,
+      county: resolvedLocation.county ?? undefined,
+      state: resolvedLocation.state ?? undefined,
+      normalizedAddress: formatResolvedAddress(street, resolvedLocation, zipCode),
     }
   }
 

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Home, ArrowLeft, AlertCircle, Loader2 } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { validateAddressFormat } from "@/lib/address-validation"
+import { formatResolvedAddress, type ZipLocation } from "@/lib/zip-city"
 
 interface AddressStepProps {
   zipCode: string
@@ -18,49 +19,57 @@ interface AddressStepProps {
 export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
   const { t } = useI18n()
   const [street, setStreet] = useState("")
-  const [city, setCity] = useState("")
+  const [location, setLocation] = useState<ZipLocation>({ city: "", county: "", state: "" })
   const [isValidating, setIsValidating] = useState(false)
-  const [isLoadingCity, setIsLoadingCity] = useState(false)
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false)
   const [validationErrorCode, setValidationErrorCode] = useState<string | null>(null)
 
   useEffect(() => {
     let isCancelled = false
 
-    const loadCity = async () => {
-      setIsLoadingCity(true)
+    const loadLocation = async () => {
+      setIsLoadingLocation(true)
       try {
         const response = await fetch(`/api/zip-city?zipCode=${encodeURIComponent(zipCode)}`, {
           cache: "no-store",
         })
 
         if (!response.ok) {
-          throw new Error("Could not resolve city for ZIP code.")
+          throw new Error("Could not resolve location for ZIP code.")
         }
 
-        const result = (await response.json()) as { city?: string | null }
+        const result = (await response.json()) as {
+          city?: string | null
+          county?: string | null
+          state?: string | null
+        }
         if (!isCancelled) {
-          setCity(result.city?.trim() || "")
+          setLocation({
+            city: result.city?.trim() || "",
+            county: result.county?.trim() || "",
+            state: result.state?.trim() || "",
+          })
         }
       } catch (error) {
-        console.warn("Could not auto-resolve city from ZIP code:", error)
+        console.warn("Could not auto-resolve location from ZIP code:", error)
         if (!isCancelled) {
-          setCity("")
+          setLocation({ city: "", county: "", state: "" })
         }
       } finally {
         if (!isCancelled) {
-          setIsLoadingCity(false)
+          setIsLoadingLocation(false)
         }
       }
     }
 
-    void loadCity()
+    void loadLocation()
 
     return () => {
       isCancelled = true
     }
   }, [zipCode])
 
-  const fullAddress = city ? `${street}, ${city}, CA ${zipCode}` : `${street}, CA ${zipCode}`
+  const fullAddress = formatResolvedAddress(street, location, zipCode)
 
   const getErrorMessage = (error: string | undefined): string => {
     if (!error) return t("address.validationError")
@@ -95,7 +104,7 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
 
     const trimmedStreet = street.trim()
 
-    // Validate address format only (city is auto-detected)
+    // Validate address format only (location is auto-detected)
     const formatResult = validateAddressFormat(trimmedStreet)
     if (!formatResult.valid) {
       setValidationErrorCode(formatResult.error || "VALIDATION_ERROR")
@@ -120,6 +129,8 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
         valid: boolean
         error?: string
         city?: string
+        county?: string
+        state?: string
         normalizedAddress?: string
       }
 
@@ -128,9 +139,14 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
         return
       }
 
-      const validatedCity = result.city || city
-      setCity(validatedCity)
-      onNext(result.normalizedAddress || `${trimmedStreet}, ${validatedCity}, CA ${zipCode}`)
+      const validatedLocation: ZipLocation = {
+        city: result.city?.trim() || location.city || "",
+        county: result.county?.trim() || location.county || "",
+        state: result.state?.trim() || location.state || "",
+      }
+
+      setLocation(validatedLocation)
+      onNext(result.normalizedAddress || formatResolvedAddress(trimmedStreet, validatedLocation, zipCode))
     } catch (error) {
       console.error("Address validation request failed:", error)
       setValidationErrorCode("VALIDATION_ERROR")
@@ -165,20 +181,36 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>{t("address.city")}</Label>
               <Input
                 type="text"
-                value={city}
+                value={location.city ?? ""}
                 disabled
-                placeholder={isLoadingCity ? "Resolving city..." : ""}
+                placeholder={isLoadingLocation ? t("address.resolvingLocation") : ""}
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("address.county")}</Label>
+              <Input
+                type="text"
+                value={location.county ?? ""}
+                disabled
+                placeholder={isLoadingLocation ? t("address.resolvingLocation") : ""}
                 className="bg-muted"
               />
             </div>
             <div className="space-y-2">
               <Label>{t("address.state")}</Label>
-              <Input type="text" value="CA" disabled className="bg-muted" />
+              <Input
+                type="text"
+                value={location.state ?? ""}
+                disabled
+                placeholder={isLoadingLocation ? t("address.resolvingLocation") : ""}
+                className="bg-muted"
+              />
             </div>
           </div>
 
@@ -187,7 +219,7 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
             <Input type="text" value={zipCode} disabled className="bg-muted" />
           </div>
 
-          {street && city && (
+          {street && (location.city || location.county || location.state) && (
             <div className="p-3 bg-muted rounded-lg text-sm">
               <p className="font-medium text-muted-foreground">{t("address.fullAddress")}</p>
               <p className="text-foreground">{fullAddress}</p>
@@ -206,16 +238,16 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t("common.back")}
             </Button>
-            <Button type="submit" className="flex-1" disabled={!street.trim() || isValidating || isLoadingCity}>
+            <Button type="submit" className="flex-1" disabled={!street.trim() || isValidating || isLoadingLocation}>
               {isValidating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   {t("address.validating")}
                 </>
-              ) : isLoadingCity ? (
+              ) : isLoadingLocation ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Resolving city...
+                  {t("address.resolvingLocation")}
                 </>
               ) : (
                 t("common.continue")
