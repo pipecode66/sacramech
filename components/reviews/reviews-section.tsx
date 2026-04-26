@@ -378,7 +378,15 @@ export function ReviewsSection({
         )}
 
         {showShowcase && showForm ? (
-          <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.3fr] lg:items-start">
+            <ReviewFormCard
+              form={form}
+              isSubmitting={isSubmitting}
+              submitError={submitError}
+              submitSuccess={submitSuccess}
+              onFormChange={handleFormChange}
+              onSubmit={handleSubmit}
+            />
             <ReviewsShowcaseCard
               averageRating={averageRating}
               totalApproved={totalApproved}
@@ -389,14 +397,6 @@ export function ReviewsSection({
               isLoadingMore={isLoadingMore}
               dateFormatter={dateFormatter}
               onLoadMore={() => void loadReviews(reviews.length, true)}
-            />
-            <ReviewFormCard
-              form={form}
-              isSubmitting={isSubmitting}
-              submitError={submitError}
-              submitSuccess={submitSuccess}
-              onFormChange={handleFormChange}
-              onSubmit={handleSubmit}
             />
           </div>
         ) : showShowcase ? (

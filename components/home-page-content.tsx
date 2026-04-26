@@ -41,7 +41,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
           initialData={initialReviews}
           showHeading={false}
           showShowcase
-          showForm={false}
+          showForm
           sectionClassName="border-t-0 bg-transparent pt-0 pb-16"
         />
 
@@ -126,12 +126,6 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
           </div>
         </section>
 
-        <ReviewsSection
-          initialData={initialReviews}
-          showHeading={false}
-          showShowcase={false}
-          showForm
-        />
       </main>
 
       <footer className="bg-card border-t py-8">
