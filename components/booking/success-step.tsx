@@ -44,7 +44,7 @@ export function SuccessStep({ bookingDetails, onNewBooking }: SuccessStepProps) 
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/20">
             <CheckCircle2 className="h-10 w-10 text-accent" />
           </div>
-          <CardTitle className="text-2xl text-accent">{t("success.title")}</CardTitle>
+          <CardTitle className="text-xl text-accent sm:text-2xl">{t("success.title")}</CardTitle>
           <CardDescription>{t("success.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

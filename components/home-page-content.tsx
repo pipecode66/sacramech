@@ -30,7 +30,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-6 md:mb-8">
-              <h2 className="text-3xl font-bold text-foreground">{t("booking.title")}</h2>
+              <h2 className="text-2xl font-bold text-foreground sm:text-3xl">{t("booking.title")}</h2>
             </div>
 
             <BookingFlow onResetRef={resetRef} serviceZipCodes={serviceZipCodes} />
@@ -52,7 +52,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
                 <DollarSign className="w-9 h-9 text-primary-foreground" />
               </div>
               <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-1">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight mb-1">
                   {t("promo.buyTitle")}
                 </h2>
                 <p className="text-lg font-semibold opacity-90">
@@ -69,7 +69,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
         <section className="py-16 bg-muted/50">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4">
                 {t("trusted.title")}
               </h2>
             </div>

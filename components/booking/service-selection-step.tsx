@@ -51,7 +51,7 @@ export function ServiceSelectionStep({ onNext, onBack }: ServiceSelectionStepPro
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <Wrench className="w-8 h-8 text-primary" />
         </div>
-        <CardTitle className="text-2xl">{t("service.title")}</CardTitle>
+        <CardTitle className="text-xl sm:text-2xl">{t("service.title")}</CardTitle>
         <CardDescription>
           {t("service.subtitle")}
         </CardDescription>

@@ -163,7 +163,7 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <Home className="w-8 h-8 text-primary" />
         </div>
-        <CardTitle className="text-2xl">{t("address.title")}</CardTitle>
+        <CardTitle className="text-xl sm:text-2xl">{t("address.title")}</CardTitle>
         <CardDescription>
           {t("address.subtitle")}
         </CardDescription>
