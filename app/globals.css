@@ -120,9 +120,18 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+  }
+
   body {
     @apply bg-background text-foreground;
     background-image: none;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
   }
 }
 
