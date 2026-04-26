@@ -22,7 +22,7 @@ export function Header({ onLogoClick }: HeaderProps = {}) {
       title={t("header.title")}
       subtitle={t("header.subtitle")}
       className="min-w-0 gap-2.5 sm:gap-3.5"
-      imageWrapperClassName="h-12 w-12 rounded-[1.25rem] border border-primary/20 shadow-[0_20px_46px_rgba(10,24,58,0.16)] sm:h-16 sm:w-16 sm:rounded-[1.6rem]"
+      imageWrapperClassName="h-12 w-12 rounded-[1.25rem] border border-primary/20 sm:h-16 sm:w-16 sm:rounded-[1.6rem]"
       titleClassName="text-base font-black sm:text-2xl"
       subtitleClassName="hidden text-[11px] font-medium tracking-[0.02em] sm:block sm:text-xs"
       priority
@@ -30,10 +30,10 @@ export function Header({ onLogoClick }: HeaderProps = {}) {
   )
 
   const brandClassName =
-    "min-w-0 flex-1 rounded-[1.25rem] border border-border/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(243,247,255,0.94))] px-2 py-1.5 shadow-[0_16px_34px_rgba(10,24,58,0.1)] transition-all hover:-translate-y-0.5 hover:shadow-[0_22px_40px_rgba(10,24,58,0.14)] sm:flex-none sm:rounded-[1.75rem] sm:px-2.5"
+    "min-w-0 flex-1 rounded-[1.25rem] border border-border/70 bg-background px-2 py-1.5 transition-all hover:-translate-y-0.5 sm:flex-none sm:rounded-[1.75rem] sm:px-2.5"
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-card/95 shadow-[0_12px_36px_rgba(10,24,58,0.06)] backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background">
       <div className="container mx-auto flex min-w-0 items-center justify-between gap-2 overflow-hidden px-3 py-3 sm:gap-4 sm:px-4 sm:py-4">
         {onLogoClick ? (
           <button onClick={onLogoClick} className={brandClassName} aria-label="Return to start">

@@ -158,7 +158,7 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
   const errorMessage = validationErrorCode ? getErrorMessage(validationErrorCode) : null
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <Home className="w-8 h-8 text-primary" />

@@ -26,7 +26,7 @@ export function BrandLogo({
     <div className={cn("flex items-center gap-3", className)}>
       <div
         className={cn(
-          "relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-border/70 bg-white shadow-[0_10px_30px_rgba(10,24,58,0.12)]",
+          "relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-border/70 bg-background",
           imageWrapperClassName,
         )}
       >

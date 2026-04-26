@@ -39,7 +39,7 @@ export function SuccessStep({ bookingDetails, onNewBooking }: SuccessStepProps) 
 
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[1fr_0.88fr]">
-      <Card className="shadow-lg">
+      <Card>
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/20">
             <CheckCircle2 className="h-10 w-10 text-accent" />

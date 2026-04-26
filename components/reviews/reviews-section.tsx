@@ -68,7 +68,7 @@ function ReviewsShowcaseCard({
   const { t } = useI18n()
 
   return (
-    <Card className="border-border/70 shadow-sm">
+    <Card className="border-border/70">
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <CardTitle className="text-2xl">{averageRating ? averageRating.toFixed(1) : "0.0"}</CardTitle>
@@ -104,7 +104,7 @@ function ReviewsShowcaseCard({
           <>
             <div className="grid gap-4 md:grid-cols-2">
               {reviews.map((review) => (
-                <article key={review.id} className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
+                <article key={review.id} className="rounded-2xl border border-border/70 bg-card p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-foreground">{review.reviewer_name}</p>
@@ -162,7 +162,7 @@ function ReviewFormCard({
   const { t } = useI18n()
 
   return (
-    <Card className="border-border/70 shadow-sm">
+    <Card className="border-border/70">
       <CardHeader>
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15 text-accent">
           <ShieldCheck className="h-6 w-6" />
@@ -364,7 +364,7 @@ export function ReviewsSection({
   return (
     <section
       id="reviews"
-      className={`border-t border-border/60 bg-[linear-gradient(180deg,rgba(6,54,124,0.03),rgba(255,255,255,0))] py-20 ${sectionClassName}`.trim()}
+      className={`border-t border-border/60 bg-background py-20 ${sectionClassName}`.trim()}
     >
       <div className="container mx-auto px-4">
         {showHeading && (

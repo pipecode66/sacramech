@@ -22,7 +22,7 @@ export function MapConfirmationStep({ address, onConfirm, onBack }: MapConfirmat
   const mapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedAddress}&zoom=16`
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg">
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="text-center">
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <MapPin className="w-8 h-8 text-primary" />
@@ -51,7 +51,7 @@ export function MapConfirmationStep({ address, onConfirm, onBack }: MapConfirmat
           />
         </div>
 
-        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/10 p-4 shadow-sm sm:p-5">
+        <div className="rounded-2xl border border-primary/20 bg-background p-4 sm:p-5">
           <div className="mb-4 flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary sm:h-11 sm:w-11">
               <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -72,11 +72,11 @@ export function MapConfirmationStep({ address, onConfirm, onBack }: MapConfirmat
             value={additionalInfo}
             onChange={(e) => setAdditionalInfo(e.target.value)}
             rows={4}
-            className="min-h-[130px] resize-none rounded-xl border-2 border-primary/15 bg-background/95 px-4 py-3 text-sm leading-6 shadow-inner transition-[border-color,box-shadow] placeholder:text-muted-foreground/80 focus-visible:border-primary/35 focus-visible:ring-primary/20 sm:min-h-[150px] sm:text-base"
+            className="min-h-[130px] resize-none rounded-xl border-2 border-primary/15 bg-background px-4 py-3 text-sm leading-6 transition-[border-color,box-shadow] placeholder:text-muted-foreground/80 focus-visible:border-primary/35 focus-visible:ring-primary/20 sm:min-h-[150px] sm:text-base"
           />
         </div>
 
-        <Alert className="border-accent/30 bg-accent/12 text-accent shadow-sm">
+        <Alert className="border-accent/30 bg-accent/12 text-accent">
           <AlertCircle className="mt-0.5 h-5 w-5" />
           <AlertTitle className="text-sm uppercase tracking-[0.12em] text-accent/90">
             {t("map.warningTitle")}

@@ -75,7 +75,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="bg-card rounded-lg p-6 shadow-sm border">
+              <div className="bg-card rounded-lg p-6 border">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <Star className="w-6 h-6 text-primary" />
                 </div>
@@ -87,7 +87,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
                 </p>
               </div>
 
-              <div className="bg-card rounded-lg p-6 shadow-sm border">
+              <div className="bg-card rounded-lg p-6 border">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <FileText className="w-6 h-6 text-primary" />
                 </div>
@@ -99,7 +99,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
                 </p>
               </div>
 
-              <div className="bg-card rounded-lg p-6 shadow-sm border">
+              <div className="bg-card rounded-lg p-6 border">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <Wrench className="w-6 h-6 text-primary" />
                 </div>
@@ -111,7 +111,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
                 </p>
               </div>
 
-              <div className="bg-card rounded-lg p-6 shadow-sm border">
+              <div className="bg-card rounded-lg p-6 border">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <ShieldCheck className="w-6 h-6 text-primary" />
                 </div>

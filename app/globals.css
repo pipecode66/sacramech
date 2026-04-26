@@ -6,9 +6,9 @@
 :root {
   --background: #fefefe;
   --foreground: #102e6c;
-  --card: #ffffff;
+  --card: #fefefe;
   --card-foreground: #102e6c;
-  --popover: #ffffff;
+  --popover: #fefefe;
   --popover-foreground: #102e6c;
   --primary: #123b8f;
   --primary-foreground: #ffffff;
@@ -29,7 +29,7 @@
   --chart-4: #0f2d6f;
   --chart-5: #98c2ff;
   --radius: 0.625rem;
-  --sidebar: #ffffff;
+  --sidebar: #fefefe;
   --sidebar-foreground: #102e6c;
   --sidebar-primary: #123b8f;
   --sidebar-primary-foreground: #ffffff;

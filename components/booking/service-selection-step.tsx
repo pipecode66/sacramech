@@ -46,7 +46,7 @@ export function ServiceSelectionStep({ onNext, onBack }: ServiceSelectionStepPro
   }
 
   return (
-    <Card className="w-full max-w-lg mx-auto shadow-lg">
+    <Card className="w-full max-w-lg mx-auto">
       <CardHeader className="text-center">
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <Wrench className="w-8 h-8 text-primary" />

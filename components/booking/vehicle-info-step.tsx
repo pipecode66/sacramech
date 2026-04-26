@@ -182,7 +182,7 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
   const cardDescription = uiMode === "manual" ? t("vehicle.subtitle") : t("vehicle.vinSubtitle")
 
   return (
-    <Card className="mx-auto w-full max-w-md shadow-lg">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader className="text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
           <Car className="h-8 w-8 text-primary" />
