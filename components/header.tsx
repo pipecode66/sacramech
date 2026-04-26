@@ -30,7 +30,7 @@ export function Header({ onLogoClick }: HeaderProps = {}) {
   )
 
   const brandClassName =
-    "min-w-0 flex-1 rounded-[1.25rem] border border-border/70 bg-background px-2 py-1.5 transition-all hover:-translate-y-0.5 sm:flex-none sm:rounded-[1.75rem] sm:px-2.5"
+    "inline-flex min-w-0 max-w-[calc(100%-7rem)] shrink-0 rounded-[1.25rem] border border-border/70 bg-background px-2 py-1.5 transition-all hover:-translate-y-0.5 sm:max-w-none sm:rounded-[1.75rem] sm:px-2.5"
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background">
