@@ -97,6 +97,10 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
   }
 
   const handleModeChange = (value: string) => {
+    if (decodedVehicle && value === "manual") {
+      return
+    }
+
     const nextMode = value as UIMode
     setUiMode(nextMode)
     resetLookupState()
@@ -190,7 +194,9 @@ export function VehicleInfoStep({ onNext, onBack }: VehicleInfoStepProps) {
         <Tabs value={uiMode} onValueChange={handleModeChange} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="vin">{t("vehicle.lookupVin")}</TabsTrigger>
-            <TabsTrigger value="manual">{t("vehicle.lookupManual")}</TabsTrigger>
+            <TabsTrigger value="manual" disabled={Boolean(decodedVehicle)}>
+              {t("vehicle.lookupManual")}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
