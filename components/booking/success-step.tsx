@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Calendar, MapPin, User, Mail, Phone, Car, Wrench, Clock } from "lucide-react"
+import { CheckCircle2, Calendar, MapPin, User, Mail, Phone, Car, Wrench, Clock, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
 import { useI18n } from "@/lib/i18n"
 import { BookingFeedbackCard } from "@/components/reviews/booking-feedback-card"
@@ -20,6 +20,7 @@ interface SuccessStepProps {
     vehicleMake: string
     vehicleModel: string
     serviceType: string
+    smsWarnings?: string[]
   }
   onNewBooking: () => void
 }
@@ -122,6 +123,16 @@ export function SuccessStep({ bookingDetails, onNewBooking }: SuccessStepProps) 
           </div>
 
           <p className="text-center text-sm text-muted-foreground">{t("success.contactNote")}</p>
+
+          {bookingDetails.smsWarnings && bookingDetails.smsWarnings.length > 0 && (
+            <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+              <div>
+                <p className="font-medium">{t("success.smsWarningTitle")}</p>
+                <p>{t("success.smsWarningDesc")}</p>
+              </div>
+            </div>
+          )}
 
           <Button onClick={onNewBooking} variant="outline" className="w-full bg-transparent">
             {t("success.newBooking")}

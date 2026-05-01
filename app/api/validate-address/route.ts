@@ -64,6 +64,15 @@ function normalizePostcode(postcode: string | undefined): string {
   return normalizeZipCode(postcode)
 }
 
+function normalizeHouseNumber(value: string | undefined): string {
+  return (value ?? "").replace(/[^a-z0-9]/gi, "").toLowerCase()
+}
+
+function getStreetHouseNumber(street: string): string {
+  const match = street.trim().match(/^(\d+[a-z]?)/i)
+  return normalizeHouseNumber(match?.[1])
+}
+
 function createValidResponse(street: string, zipCode: string, location: ZipLocation): AddressValidationResponse {
   return {
     valid: true,
@@ -102,29 +111,36 @@ async function validateWithNominatim(street: string, zipCode: string): Promise<A
 
     if (!response.ok) {
       console.warn("[validate-address] Nominatim returned non-OK status:", response.status)
-      return createValidResponse(street, zipCode, fallbackLocation)
+      return { valid: false, error: "VALIDATION_ERROR" }
     }
 
     results = (await response.json()) as NominatimResult[]
   } catch (err) {
     console.warn("[validate-address] Nominatim request failed:", err)
-    return createValidResponse(street, zipCode, fallbackLocation)
+    return { valid: false, error: "VALIDATION_ERROR" }
   }
 
-  // Nominatim can miss exact house numbers. If the ZIP resolves, accept the
-  // typed street and let the user confirm the map in the next step.
   if (!results || results.length === 0) {
-    if (!zipLocation) {
-      return { valid: false, error: "ADDRESS_NOT_FOUND" }
-    }
-
-    return createValidResponse(street, zipCode, fallbackLocation)
+    return { valid: false, error: "ADDRESS_NOT_FOUND" }
   }
+
+  const requestedHouseNumber = getStreetHouseNumber(street)
+  let foundZipMismatch = false
+  let foundZipMatchWithoutExactHouseNumber = false
 
   for (const result of results) {
     const returnedZip = normalizePostcode(result.address.postcode)
 
     if (returnedZip !== zipCode) {
+      if (returnedZip) {
+        foundZipMismatch = true
+      }
+      continue
+    }
+
+    const returnedHouseNumber = normalizeHouseNumber(result.address.house_number)
+    if (requestedHouseNumber && requestedHouseNumber !== returnedHouseNumber) {
+      foundZipMatchWithoutExactHouseNumber = true
       continue
     }
 
@@ -135,6 +151,14 @@ async function validateWithNominatim(street: string, zipCode: string): Promise<A
     })
 
     return createValidResponse(street, zipCode, resolvedLocation)
+  }
+
+  if (foundZipMismatch) {
+    return { valid: false, error: "ADDRESS_ZIP_MISMATCH" }
+  }
+
+  if (foundZipMatchWithoutExactHouseNumber) {
+    return { valid: false, error: "ADDRESS_NOT_FOUND" }
   }
 
   return { valid: false, error: "ADDRESS_ZIP_MISMATCH" }

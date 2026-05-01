@@ -140,6 +140,7 @@ export function DateSelectionStep({ onSubmit, onBack, isSubmitting }: DateSelect
             disabled={(date) => date < today || isDateFull(date)}
             defaultMonth={today}
             numberOfMonths={shouldShowNextMonth ? 2 : 1}
+            showOutsideDays={!shouldShowNextMonth}
             className="rounded-md border"
           />
         </div>

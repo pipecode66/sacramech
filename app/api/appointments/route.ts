@@ -6,6 +6,8 @@ import { z } from "zod"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 import { sendTwilioSms } from "@/lib/twilio"
 
+export const runtime = "nodejs"
+
 const appointmentSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
@@ -60,6 +62,11 @@ function buildAdminSms(input: z.infer<typeof appointmentSchema>, appointmentDate
     `Phone: ${input.phone}`,
     `Address: ${input.address}`,
   ].join("\n")
+}
+
+function getSmsWarning(label: "Customer" | "Admin", error: unknown) {
+  const detail = error instanceof Error ? error.message : "Unknown Twilio error."
+  return `${label} SMS could not be sent: ${detail}`
 }
 
 export async function POST(request: Request) {
@@ -119,7 +126,7 @@ export async function POST(request: Request) {
       })
     } catch (smsError) {
       console.error("Error sending customer booking SMS:", smsError)
-      warnings.push("Customer SMS could not be sent.")
+      warnings.push(getSmsWarning("Customer", smsError))
     }
 
     try {
@@ -129,7 +136,7 @@ export async function POST(request: Request) {
       })
     } catch (smsError) {
       console.error("Error sending admin booking SMS:", smsError)
-      warnings.push("Admin SMS could not be sent.")
+      warnings.push(getSmsWarning("Admin", smsError))
     }
 
     revalidatePath("/admin/dashboard")

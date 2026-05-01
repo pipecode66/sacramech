@@ -29,6 +29,7 @@ interface BookingData {
   phone: string
   referralSource: string
   date: Date | null
+  smsWarnings: string[]
 }
 
 export function BookingFlow({
@@ -55,6 +56,7 @@ export function BookingFlow({
     phone: "",
     referralSource: "",
     date: null,
+    smsWarnings: [],
   })
 
   const handleZipNext = (zipCode: string) => {
@@ -120,11 +122,15 @@ export function BookingFlow({
         throw new Error(result.error || "Unable to create appointment")
       }
 
-      if (Array.isArray(result.warnings) && result.warnings.length > 0) {
-        console.warn("Appointment created with SMS warnings:", result.warnings)
+      const smsWarnings = Array.isArray(result.warnings)
+        ? result.warnings.filter((warning: unknown): warning is string => typeof warning === "string")
+        : []
+
+      if (smsWarnings.length > 0) {
+        console.warn("Appointment created with SMS warnings:", smsWarnings)
       }
 
-      setBookingData((prev) => ({ ...prev, date }))
+      setBookingData((prev) => ({ ...prev, date, smsWarnings }))
       setStep("success")
     } catch (error) {
       console.error("Error creating appointment:", error)
@@ -150,6 +156,7 @@ export function BookingFlow({
       phone: "",
       referralSource: "",
       date: null,
+      smsWarnings: [],
     })
     setStep("zip")
   }
@@ -242,6 +249,7 @@ export function BookingFlow({
             vehicleMake: bookingData.vehicleMake,
             vehicleModel: bookingData.vehicleModel,
             serviceType: bookingData.serviceType,
+            smsWarnings: bookingData.smsWarnings,
           }}
           onNewBooking={handleNewBooking}
         />

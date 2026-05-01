@@ -179,6 +179,8 @@ const translations = {
     "success.email": "Email",
     "success.phone": "Phone",
     "success.contactNote": "We will contact you shortly to confirm the appointment.",
+    "success.smsWarningTitle": "SMS confirmation was not sent automatically.",
+    "success.smsWarningDesc": "Your appointment is saved, but the SMS notification service needs to be checked.",
     "success.newBooking": "Book Another Appointment",
 
     // Common
@@ -520,6 +522,8 @@ const translations = {
     "success.email": "Correo Electrónico",
     "success.phone": "Teléfono",
     "success.contactNote": "Nos comunicaremos contigo pronto para confirmar tu cita.",
+    "success.smsWarningTitle": "La confirmacion por SMS no se envio automaticamente.",
+    "success.smsWarningDesc": "Tu cita quedo guardada, pero se debe revisar el servicio de notificaciones SMS.",
     "success.newBooking": "Agendar Otra Cita",
 
     // Common

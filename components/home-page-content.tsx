@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import { Header } from "@/components/header"
 import { BookingFlow } from "@/components/booking/booking-flow"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
@@ -16,6 +16,36 @@ interface HomePageContentProps {
 export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageContentProps) {
   const { t } = useI18n()
   const resetRef = useRef<(() => void) | null>(null)
+  const bookingSectionRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const previousScrollRestoration = window.history.scrollRestoration
+    window.history.scrollRestoration = "manual"
+
+    const scrollToBooking = () => {
+      window.requestAnimationFrame(() => {
+        bookingSectionRef.current?.scrollIntoView({ block: "start" })
+      })
+    }
+
+    const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined
+    if (navigation?.type === "back_forward") {
+      scrollToBooking()
+    }
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        scrollToBooking()
+      }
+    }
+
+    window.addEventListener("pageshow", handlePageShow)
+
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration
+      window.removeEventListener("pageshow", handlePageShow)
+    }
+  }, [])
 
   const handleLogoClick = () => {
     resetRef.current?.()
@@ -27,7 +57,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
       <Header onLogoClick={handleLogoClick} />
 
       <main className="flex-1">
-        <section className="py-16">
+        <section ref={bookingSectionRef} className="py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-6 md:mb-8">
               <h2 className="text-2xl font-bold text-foreground sm:text-3xl">{t("booking.title")}</h2>
