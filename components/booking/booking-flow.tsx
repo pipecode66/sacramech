@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, type RefObject } from "react"
+import { useState, useEffect, useRef, type RefObject } from "react"
 import { ZipCodeStep } from "./zip-code-step"
 import { VehicleInfoStep } from "./vehicle-info-step"
 import { ServiceSelectionStep } from "./service-selection-step"
@@ -41,6 +41,8 @@ export function BookingFlow({
 }) {
   const [step, setStep] = useState<Step>("zip")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const flowRef = useRef<HTMLDivElement | null>(null)
+  const hasMountedRef = useRef(false)
   const [bookingData, setBookingData] = useState<BookingData>({
     zipCode: "",
     vehicleYear: "",
@@ -171,8 +173,29 @@ export function BookingFlow({
     }
   })
 
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
+
+    const isMobileViewport = window.matchMedia("(max-width: 767px)").matches
+    if (!isMobileViewport) {
+      return
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    window.requestAnimationFrame(() => {
+      flowRef.current?.scrollIntoView({
+        block: "start",
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+      })
+    })
+  }, [step])
+
   return (
-    <div className="w-full">
+    <div ref={flowRef} className="w-full scroll-mt-24 sm:scroll-mt-28">
       {/* Progress indicator */}
       {step !== "success" && (
         <div className="flex justify-center mb-8">
