@@ -23,6 +23,15 @@ interface NominatimResult {
   }
 }
 
+interface CensusAddressMatch {
+  matchedAddress: string
+  addressComponents: {
+    zip?: string
+    city?: string
+    state?: string
+  }
+}
+
 interface AddressValidationResponse {
   valid: boolean
   error?: string
@@ -73,6 +82,26 @@ function getStreetHouseNumber(street: string): string {
   return normalizeHouseNumber(match?.[1])
 }
 
+function toTitleCase(value: string | undefined): string | null {
+  if (!value) return null
+
+  return value
+    .toLowerCase()
+    .split(/\s+/)
+    .map((part) => (part ? `${part[0].toUpperCase()}${part.slice(1)}` : part))
+    .join(" ")
+}
+
+function normalizeState(value: string | undefined, fallbackState: string | null): string | null {
+  if (!value) return fallbackState
+
+  if (value.toUpperCase() === "CA") {
+    return "California"
+  }
+
+  return toTitleCase(value) ?? fallbackState
+}
+
 function createValidResponse(street: string, zipCode: string, location: ZipLocation): AddressValidationResponse {
   return {
     valid: true,
@@ -81,6 +110,22 @@ function createValidResponse(street: string, zipCode: string, location: ZipLocat
     state: location.state ?? undefined,
     normalizedAddress: formatResolvedAddress(street, location, zipCode),
   }
+}
+
+function buildCensusAddress(street: string, zipCode: string, zipLocation: ZipLocation | null): string {
+  const parts = [street.trim()]
+
+  if (zipLocation?.city) {
+    parts.push(zipLocation.city)
+  }
+
+  if (zipLocation?.state) {
+    parts.push(zipLocation.state)
+  }
+
+  parts.push(zipCode)
+
+  return parts.join(", ")
 }
 
 async function searchNominatim(params: URLSearchParams): Promise<NominatimResult[] | null> {
@@ -103,6 +148,40 @@ async function searchNominatim(params: URLSearchParams): Promise<NominatimResult
     return (await response.json()) as NominatimResult[]
   } catch (err) {
     console.warn("[validate-address] Nominatim request failed:", err)
+    return null
+  }
+}
+
+async function searchCensus(street: string, zipCode: string, zipLocation: ZipLocation | null): Promise<CensusAddressMatch[] | null> {
+  const address = buildCensusAddress(street, zipCode, zipLocation)
+  const params = new URLSearchParams({
+    address,
+    benchmark: "Public_AR_Current",
+    format: "json",
+  })
+
+  try {
+    const response = await fetch(`https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?${params.toString()}`, {
+      headers: {
+        "User-Agent": "SacraMech-BookingApp/1.0 (contact@rapimobilemechanic.com)",
+      },
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      console.warn("[validate-address] Census geocoder returned non-OK status:", response.status)
+      return null
+    }
+
+    const data = (await response.json()) as {
+      result?: {
+        addressMatches?: CensusAddressMatch[]
+      }
+    }
+
+    return data.result?.addressMatches ?? []
+  } catch (err) {
+    console.warn("[validate-address] Census geocoder request failed:", err)
     return null
   }
 }
@@ -165,6 +244,52 @@ function evaluateNominatimResults(
   return null
 }
 
+async function validateWithCensus(
+  street: string,
+  zipCode: string,
+  zipLocation: ZipLocation | null,
+  fallbackLocation: ZipLocation,
+): Promise<AddressValidationResponse | null> {
+  const matches = await searchCensus(street, zipCode, zipLocation)
+  if (!matches || matches.length === 0) {
+    return null
+  }
+
+  const requestedHouseNumber = getStreetHouseNumber(street)
+  let foundExactAddressInAnotherZip = false
+
+  for (const match of matches) {
+    const matchedHouseNumber = getStreetHouseNumber(match.matchedAddress)
+
+    if (requestedHouseNumber && matchedHouseNumber !== requestedHouseNumber) {
+      continue
+    }
+
+    const returnedZip = normalizeZipCode(match.addressComponents.zip ?? "")
+
+    if (returnedZip !== zipCode) {
+      if (returnedZip) {
+        foundExactAddressInAnotherZip = true
+      }
+      continue
+    }
+
+    const resolvedLocation = createFallbackLocation({
+      city: toTitleCase(match.addressComponents.city) ?? fallbackLocation.city,
+      county: fallbackLocation.county,
+      state: normalizeState(match.addressComponents.state, fallbackLocation.state),
+    })
+
+    return createValidResponse(street, zipCode, resolvedLocation)
+  }
+
+  if (foundExactAddressInAnotherZip) {
+    return { valid: false, error: "ADDRESS_ZIP_MISMATCH" }
+  }
+
+  return null
+}
+
 async function validateWithNominatim(street: string, zipCode: string): Promise<AddressValidationResponse> {
   const zipLocation = await resolveLocationForZip(zipCode)
   const fallbackLocation = createFallbackLocation(zipLocation)
@@ -184,7 +309,7 @@ async function validateWithNominatim(street: string, zipCode: string): Promise<A
   }
 
   const scopedValidation = evaluateNominatimResults(scopedResults, street, zipCode, fallbackLocation)
-  if (scopedValidation) {
+  if (scopedValidation?.valid) {
     return scopedValidation
   }
 
@@ -202,6 +327,19 @@ async function validateWithNominatim(street: string, zipCode: string): Promise<A
   }
 
   const broadValidation = evaluateNominatimResults(broadResults, street, zipCode, fallbackLocation)
+  if (broadValidation?.valid) {
+    return broadValidation
+  }
+
+  const censusValidation = await validateWithCensus(street, zipCode, zipLocation, fallbackLocation)
+  if (censusValidation) {
+    return censusValidation
+  }
+
+  if (scopedValidation) {
+    return scopedValidation
+  }
+
   if (broadValidation) {
     return broadValidation
   }
