@@ -83,22 +83,8 @@ function createValidResponse(street: string, zipCode: string, location: ZipLocat
   }
 }
 
-async function validateWithNominatim(street: string, zipCode: string): Promise<AddressValidationResponse> {
-  const zipLocation = await resolveLocationForZip(zipCode)
-  const fallbackLocation = createFallbackLocation(zipLocation)
-
-  const params = new URLSearchParams({
-    street,
-    postalcode: zipCode,
-    country: "US",
-    format: "json",
-    addressdetails: "1",
-    limit: "5",
-  })
-
+async function searchNominatim(params: URLSearchParams): Promise<NominatimResult[] | null> {
   const nominatimUrl = `https://nominatim.openstreetmap.org/search?${params.toString()}`
-
-  let results: NominatimResult[]
 
   try {
     const response = await fetch(nominatimUrl, {
@@ -111,44 +97,59 @@ async function validateWithNominatim(street: string, zipCode: string): Promise<A
 
     if (!response.ok) {
       console.warn("[validate-address] Nominatim returned non-OK status:", response.status)
-      return { valid: false, error: "VALIDATION_ERROR" }
+      return null
     }
 
-    results = (await response.json()) as NominatimResult[]
+    return (await response.json()) as NominatimResult[]
   } catch (err) {
     console.warn("[validate-address] Nominatim request failed:", err)
-    return { valid: false, error: "VALIDATION_ERROR" }
+    return null
   }
+}
 
-  if (!results || results.length === 0) {
-    return { valid: false, error: "ADDRESS_NOT_FOUND" }
-  }
+function hasExactRequestedHouseNumber(result: NominatimResult, requestedHouseNumber: string): boolean {
+  if (!requestedHouseNumber) return true
+  return normalizeHouseNumber(result.address.house_number) === requestedHouseNumber
+}
 
+function createLocationFromResult(result: NominatimResult, fallbackLocation: ZipLocation): ZipLocation {
+  return createFallbackLocation({
+    city: getCityFromNominatim(result.address) ?? fallbackLocation.city,
+    county: getCountyFromNominatim(result.address) ?? fallbackLocation.county,
+    state: getStateFromNominatim(result.address) ?? fallbackLocation.state,
+  })
+}
+
+function evaluateNominatimResults(
+  results: NominatimResult[],
+  street: string,
+  zipCode: string,
+  fallbackLocation: ZipLocation,
+): AddressValidationResponse | null {
   const requestedHouseNumber = getStreetHouseNumber(street)
   let foundZipMismatch = false
   let foundZipMatchWithoutExactHouseNumber = false
+
+  if (!results || results.length === 0) {
+    return null
+  }
 
   for (const result of results) {
     const returnedZip = normalizePostcode(result.address.postcode)
 
     if (returnedZip !== zipCode) {
-      if (returnedZip) {
+      if (returnedZip && hasExactRequestedHouseNumber(result, requestedHouseNumber)) {
         foundZipMismatch = true
       }
       continue
     }
 
-    const returnedHouseNumber = normalizeHouseNumber(result.address.house_number)
-    if (requestedHouseNumber && requestedHouseNumber !== returnedHouseNumber) {
+    if (!hasExactRequestedHouseNumber(result, requestedHouseNumber)) {
       foundZipMatchWithoutExactHouseNumber = true
       continue
     }
 
-    const resolvedLocation = createFallbackLocation({
-      city: getCityFromNominatim(result.address) ?? fallbackLocation.city,
-      county: getCountyFromNominatim(result.address) ?? fallbackLocation.county,
-      state: getStateFromNominatim(result.address) ?? fallbackLocation.state,
-    })
+    const resolvedLocation = createLocationFromResult(result, fallbackLocation)
 
     return createValidResponse(street, zipCode, resolvedLocation)
   }
@@ -161,7 +162,60 @@ async function validateWithNominatim(street: string, zipCode: string): Promise<A
     return { valid: false, error: "ADDRESS_NOT_FOUND" }
   }
 
-  return { valid: false, error: "ADDRESS_ZIP_MISMATCH" }
+  return null
+}
+
+async function validateWithNominatim(street: string, zipCode: string): Promise<AddressValidationResponse> {
+  const zipLocation = await resolveLocationForZip(zipCode)
+  const fallbackLocation = createFallbackLocation(zipLocation)
+
+  const scopedParams = new URLSearchParams({
+    street,
+    postalcode: zipCode,
+    country: "US",
+    format: "json",
+    addressdetails: "1",
+    limit: "5",
+  })
+
+  const scopedResults = await searchNominatim(scopedParams)
+  if (!scopedResults) {
+    return { valid: false, error: "VALIDATION_ERROR" }
+  }
+
+  const scopedValidation = evaluateNominatimResults(scopedResults, street, zipCode, fallbackLocation)
+  if (scopedValidation) {
+    return scopedValidation
+  }
+
+  const broadParams = new URLSearchParams({
+    street,
+    country: "US",
+    format: "json",
+    addressdetails: "1",
+    limit: "10",
+  })
+
+  const broadResults = await searchNominatim(broadParams)
+  if (!broadResults) {
+    return { valid: false, error: "VALIDATION_ERROR" }
+  }
+
+  const broadValidation = evaluateNominatimResults(broadResults, street, zipCode, fallbackLocation)
+  if (broadValidation) {
+    return broadValidation
+  }
+
+  const requestedHouseNumber = getStreetHouseNumber(street)
+  const hasExactAddressInAnotherZip = broadResults.some((result) => {
+    const returnedZip = normalizePostcode(result.address.postcode)
+    return returnedZip && returnedZip !== zipCode && hasExactRequestedHouseNumber(result, requestedHouseNumber)
+  })
+
+  return {
+    valid: false,
+    error: hasExactAddressInAnotherZip ? "ADDRESS_ZIP_MISMATCH" : "ADDRESS_NOT_FOUND",
+  }
 }
 
 export async function POST(request: Request) {
