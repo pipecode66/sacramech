@@ -31,3 +31,13 @@ export async function getServiceZipCodes() {
     return [...SACRAMENTO_ZIP_CODES].sort()
   }
 }
+
+export async function isServiceZipCode(zipCode: string) {
+  const cleanZip = zipCode.replace(/\D/g, "").slice(0, 5)
+  if (cleanZip.length !== 5) {
+    return false
+  }
+
+  const serviceZipCodes = await getServiceZipCodes()
+  return serviceZipCodes.includes(cleanZip)
+}

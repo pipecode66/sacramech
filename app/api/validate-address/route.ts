@@ -1,4 +1,5 @@
 import { validateAddressFormat } from "@/lib/address-validation"
+import { isServiceZipCode } from "@/lib/service-zip-codes"
 import { formatResolvedAddress, normalizeZipCode, resolveLocationForZip, type ZipLocation } from "@/lib/zip-city"
 import { NextResponse } from "next/server"
 
@@ -41,6 +42,51 @@ interface AddressValidationResponse {
   normalizedAddress?: string
 }
 
+const STREET_NORMALIZATION_MAP: Record<string, string> = {
+  north: "n",
+  n: "n",
+  south: "s",
+  s: "s",
+  east: "e",
+  e: "e",
+  west: "w",
+  w: "w",
+  northeast: "ne",
+  ne: "ne",
+  northwest: "nw",
+  nw: "nw",
+  southeast: "se",
+  se: "se",
+  southwest: "sw",
+  sw: "sw",
+  street: "st",
+  st: "st",
+  avenue: "ave",
+  ave: "ave",
+  boulevard: "blvd",
+  blvd: "blvd",
+  road: "rd",
+  rd: "rd",
+  drive: "dr",
+  dr: "dr",
+  court: "ct",
+  ct: "ct",
+  lane: "ln",
+  ln: "ln",
+  circle: "cir",
+  cir: "cir",
+  place: "pl",
+  pl: "pl",
+  terrace: "ter",
+  ter: "ter",
+  trail: "trl",
+  trl: "trl",
+  parkway: "pkwy",
+  pkwy: "pkwy",
+  highway: "hwy",
+  hwy: "hwy",
+}
+
 function getCityFromNominatim(address: NominatimResult["address"]): string | null {
   return (
     address.city ??
@@ -80,6 +126,27 @@ function normalizeHouseNumber(value: string | undefined): string {
 function getStreetHouseNumber(street: string): string {
   const match = street.trim().match(/^(\d+[a-z]?)/i)
   return normalizeHouseNumber(match?.[1])
+}
+
+function normalizeStreetName(value: string | undefined): string {
+  if (!value) return ""
+
+  return value
+    .split(",")[0]
+    .replace(/^\s*\d+[a-z]?\s+/i, "")
+    .replace(/[^a-z0-9\s]/gi, " ")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => STREET_NORMALIZATION_MAP[token] ?? token)
+    .join(" ")
+}
+
+function hasExactRequestedStreetName(returnedStreet: string | undefined, requestedStreet: string): boolean {
+  const normalizedReturnedStreet = normalizeStreetName(returnedStreet)
+  const normalizedRequestedStreet = normalizeStreetName(requestedStreet)
+
+  return Boolean(normalizedReturnedStreet && normalizedRequestedStreet && normalizedReturnedStreet === normalizedRequestedStreet)
 }
 
 function toTitleCase(value: string | undefined): string | null {
@@ -191,6 +258,17 @@ function hasExactRequestedHouseNumber(result: NominatimResult, requestedHouseNum
   return normalizeHouseNumber(result.address.house_number) === requestedHouseNumber
 }
 
+function hasExactRequestedAddress(
+  result: NominatimResult,
+  requestedStreet: string,
+  requestedHouseNumber: string,
+): boolean {
+  return (
+    hasExactRequestedHouseNumber(result, requestedHouseNumber) &&
+    hasExactRequestedStreetName(result.address.road, requestedStreet)
+  )
+}
+
 function createLocationFromResult(result: NominatimResult, fallbackLocation: ZipLocation): ZipLocation {
   return createFallbackLocation({
     city: getCityFromNominatim(result.address) ?? fallbackLocation.city,
@@ -207,7 +285,7 @@ function evaluateNominatimResults(
 ): AddressValidationResponse | null {
   const requestedHouseNumber = getStreetHouseNumber(street)
   let foundZipMismatch = false
-  let foundZipMatchWithoutExactHouseNumber = false
+  let foundZipMatchWithoutExactAddress = false
 
   if (!results || results.length === 0) {
     return null
@@ -217,14 +295,14 @@ function evaluateNominatimResults(
     const returnedZip = normalizePostcode(result.address.postcode)
 
     if (returnedZip !== zipCode) {
-      if (returnedZip && hasExactRequestedHouseNumber(result, requestedHouseNumber)) {
+      if (returnedZip && hasExactRequestedAddress(result, street, requestedHouseNumber)) {
         foundZipMismatch = true
       }
       continue
     }
 
-    if (!hasExactRequestedHouseNumber(result, requestedHouseNumber)) {
-      foundZipMatchWithoutExactHouseNumber = true
+    if (!hasExactRequestedAddress(result, street, requestedHouseNumber)) {
+      foundZipMatchWithoutExactAddress = true
       continue
     }
 
@@ -237,7 +315,7 @@ function evaluateNominatimResults(
     return { valid: false, error: "ADDRESS_ZIP_MISMATCH" }
   }
 
-  if (foundZipMatchWithoutExactHouseNumber) {
+  if (foundZipMatchWithoutExactAddress) {
     return { valid: false, error: "ADDRESS_NOT_FOUND" }
   }
 
@@ -262,6 +340,10 @@ async function validateWithCensus(
     const matchedHouseNumber = getStreetHouseNumber(match.matchedAddress)
 
     if (requestedHouseNumber && matchedHouseNumber !== requestedHouseNumber) {
+      continue
+    }
+
+    if (!hasExactRequestedStreetName(match.matchedAddress, street)) {
       continue
     }
 
@@ -347,7 +429,7 @@ async function validateWithNominatim(street: string, zipCode: string): Promise<A
   const requestedHouseNumber = getStreetHouseNumber(street)
   const hasExactAddressInAnotherZip = broadResults.some((result) => {
     const returnedZip = normalizePostcode(result.address.postcode)
-    return returnedZip && returnedZip !== zipCode && hasExactRequestedHouseNumber(result, requestedHouseNumber)
+    return returnedZip && returnedZip !== zipCode && hasExactRequestedAddress(result, street, requestedHouseNumber)
   })
 
   return {
@@ -364,6 +446,10 @@ export async function POST(request: Request) {
 
     if (!street || zipCode.length !== 5) {
       return NextResponse.json({ valid: false, error: "INVALID_REQUEST" }, { status: 400 })
+    }
+
+    if (!(await isServiceZipCode(zipCode))) {
+      return NextResponse.json({ valid: false, error: "UNSUPPORTED_ZIP" })
     }
 
     const formatResult = validateAddressFormat(street)

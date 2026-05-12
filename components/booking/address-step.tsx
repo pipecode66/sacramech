@@ -89,6 +89,8 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
         return t("address.addressZipMismatch")
       case "ADDRESS_INCOMPLETE":
         return t("address.addressIncomplete")
+      case "UNSUPPORTED_ZIP":
+        return t("address.unsupportedZip")
       case "INVALID_CITY_FOR_ZIP":
         return t("address.invalidCityForZip")
       case "EMPTY_ADDRESS":
