@@ -9,43 +9,7 @@ import { Users, MapPin, CheckCircle2, AlertCircle, Send, Loader2 } from "lucide-
 import { useI18n } from "@/lib/i18n"
 import { formatLocalDate } from "@/lib/date-utils"
 import { sendMechanicAssignmentSms } from "@/app/admin/actions"
-
-// Service area mapping for California
-const serviceAreaMap: Record<string, string> = {
-  "95811": "Central Sacramento",
-  "95814": "Central Sacramento",
-  "95815": "Central Sacramento",
-  "95816": "Central Sacramento",
-  "95819": "North Sacramento",
-  "95820": "North Sacramento",
-  "95821": "South Sacramento",
-  "95822": "South Sacramento",
-  "95823": "South Sacramento",
-  "95824": "South Sacramento",
-  "95825": "East Sacramento",
-  "95826": "East Sacramento",
-  "95827": "East Sacramento",
-  "95828": "East Sacramento",
-  "95829": "East Sacramento",
-  "95830": "East Sacramento",
-  "95831": "South Sacramento",
-  "95832": "South Sacramento",
-  "95833": "South Sacramento",
-  "95838": "South Sacramento",
-  "95851": "East Sacramento",
-  "95864": "East Sacramento",
-  "95670": "East Sacramento (Rancho Cordova)",
-  "95742": "East Sacramento (Rancho Cordova)",
-  "95758": "South Sacramento",
-  "95757": "South Sacramento",
-  "95605": "West Sacramento",
-  "95691": "West Sacramento",
-  "95798": "West Sacramento",
-  "95799": "West Sacramento",
-  "95624": "Citrus Heights",
-  "95621": "Folsom",
-  "95630": "Folsom",
-}
+import { getServiceAreaForZip, isSameServiceArea } from "@/lib/service-area"
 
 interface Appointment {
   id: string
@@ -122,9 +86,10 @@ export function MechanicAssignmentPanel({
   }
 
   const getAvailableMechanics = (zipCode?: string | null) => {
-    const serviceArea = (zipCode ? serviceAreaMap[zipCode] : "") || "Central Sacramento"
-    const normalizedServiceArea = serviceArea.trim().toLowerCase()
-    return technicians.filter((mechanic) => mechanic.area.trim().toLowerCase() === normalizedServiceArea)
+    const serviceArea = getServiceAreaForZip(zipCode)
+    if (!serviceArea) return []
+
+    return technicians.filter((mechanic) => isSameServiceArea(mechanic.area, serviceArea))
   }
 
   const currentAppointment = pendingAppointments.find((appointment) => appointment.id === selectedAppointment)
@@ -136,6 +101,7 @@ export function MechanicAssignmentPanel({
   const selectedMechanic = currentAppointment
     ? getAvailableMechanics(currentAppointment.zip_code).find((mechanic) => mechanic.id === selectedMechanicId)
     : undefined
+  const currentServiceArea = currentAppointment ? getServiceAreaForZip(currentAppointment.zip_code) : null
 
   const handleSendSms = async () => {
     if (!selectedAppointment || !selectedMechanic) {
@@ -275,7 +241,7 @@ export function MechanicAssignmentPanel({
                 <div className="mt-1 flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-primary" />
                   <p className="font-medium">
-                    {serviceAreaMap[currentAppointment.zip_code || ""] || t("assign.unknown")}
+                    {currentServiceArea || t("assign.unknown")}
                   </p>
                 </div>
               </div>
