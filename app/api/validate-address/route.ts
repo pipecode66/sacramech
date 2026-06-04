@@ -26,6 +26,10 @@ interface NominatimResult {
 
 interface CensusAddressMatch {
   matchedAddress: string
+  coordinates?: {
+    x?: number
+    y?: number
+  }
   addressComponents: {
     zip?: string
     city?: string
@@ -40,6 +44,8 @@ interface AddressValidationResponse {
   county?: string
   state?: string
   normalizedAddress?: string
+  latitude?: number
+  longitude?: number
 }
 
 const STREET_NORMALIZATION_MAP: Record<string, string> = {
@@ -169,14 +175,43 @@ function normalizeState(value: string | undefined, fallbackState: string | null)
   return toTitleCase(value) ?? fallbackState
 }
 
-function createValidResponse(street: string, zipCode: string, location: ZipLocation): AddressValidationResponse {
+function createValidResponse(
+  street: string,
+  zipCode: string,
+  location: ZipLocation,
+  coordinates?: { latitude?: number | null; longitude?: number | null },
+): AddressValidationResponse {
   return {
     valid: true,
     city: location.city ?? undefined,
     county: location.county ?? undefined,
     state: location.state ?? undefined,
     normalizedAddress: formatResolvedAddress(street, location, zipCode),
+    latitude: typeof coordinates?.latitude === "number" ? coordinates.latitude : undefined,
+    longitude: typeof coordinates?.longitude === "number" ? coordinates.longitude : undefined,
   }
+}
+
+function getCoordinatesFromNominatim(result: NominatimResult): { latitude: number; longitude: number } | undefined {
+  const latitude = Number.parseFloat(result.lat)
+  const longitude = Number.parseFloat(result.lon)
+
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    return { latitude, longitude }
+  }
+
+  return undefined
+}
+
+function getCoordinatesFromCensus(match: CensusAddressMatch): { latitude: number; longitude: number } | undefined {
+  const longitude = match.coordinates?.x
+  const latitude = match.coordinates?.y
+
+  if (typeof latitude === "number" && typeof longitude === "number") {
+    return { latitude, longitude }
+  }
+
+  return undefined
 }
 
 function buildCensusAddress(street: string, zipCode: string, zipLocation: ZipLocation | null): string {
@@ -308,7 +343,7 @@ function evaluateNominatimResults(
 
     const resolvedLocation = createLocationFromResult(result, fallbackLocation)
 
-    return createValidResponse(street, zipCode, resolvedLocation)
+    return createValidResponse(street, zipCode, resolvedLocation, getCoordinatesFromNominatim(result))
   }
 
   if (foundZipMismatch) {
@@ -362,7 +397,7 @@ async function validateWithCensus(
       state: normalizeState(match.addressComponents.state, fallbackLocation.state),
     })
 
-    return createValidResponse(street, zipCode, resolvedLocation)
+    return createValidResponse(street, zipCode, resolvedLocation, getCoordinatesFromCensus(match))
   }
 
   if (foundExactAddressInAnotherZip) {

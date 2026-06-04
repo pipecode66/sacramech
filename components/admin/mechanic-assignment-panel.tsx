@@ -9,7 +9,7 @@ import { Users, MapPin, CheckCircle2, AlertCircle, Send, Loader2 } from "lucide-
 import { useI18n } from "@/lib/i18n"
 import { formatLocalDate } from "@/lib/date-utils"
 import { sendMechanicAssignmentSms } from "@/app/admin/actions"
-import { getServiceAreaForZip, isSameServiceArea } from "@/lib/service-area"
+import { rankMechanicsByDistance, type MechanicDistanceCategory, type RankedMechanic } from "@/lib/mechanic-distance"
 
 interface Appointment {
   id: string
@@ -17,6 +17,9 @@ interface Appointment {
   first_name?: string
   last_name?: string
   zip_code?: string | null
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
   service_type?: string | null
   appointment_date?: string
   status?: string
@@ -27,6 +30,10 @@ interface Technician {
   id: string
   name: string
   area: string
+  zip_code?: string | null
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
   phone: string | null
   join_date: string | null
   availability?: string | null
@@ -42,6 +49,17 @@ interface MechanicAssignmentPanelProps {
 interface SmsFeedback {
   tone: "success" | "error"
   message: string
+}
+
+type RankableTechnician = Technician & {
+  zipCode?: string | null
+}
+
+const DISTANCE_CATEGORY_STYLES: Record<MechanicDistanceCategory, string> = {
+  near: "border-green-200 bg-green-50 text-green-800",
+  intermediate: "border-orange-200 bg-orange-50 text-orange-800",
+  far: "border-red-200 bg-red-50 text-red-800",
+  optional: "border-amber-300 bg-amber-100 text-amber-900",
 }
 
 export function MechanicAssignmentPanel({
@@ -85,11 +103,22 @@ export function MechanicAssignmentPanel({
     onAssignMechanic?.(appointmentId, mechanicId)
   }
 
-  const getAvailableMechanics = (zipCode?: string | null) => {
-    const serviceArea = getServiceAreaForZip(zipCode)
-    if (!serviceArea) return []
+  const getRankedMechanics = (appointment?: Appointment | null): Array<RankedMechanic<RankableTechnician>> => {
+    if (!appointment) return []
 
-    return technicians.filter((mechanic) => isSameServiceArea(mechanic.area, serviceArea))
+    const rankableTechnicians = technicians.map((mechanic) => ({
+      ...mechanic,
+      zipCode: mechanic.zip_code,
+    }))
+
+    return rankMechanicsByDistance(
+      {
+        zipCode: appointment.zip_code,
+        latitude: appointment.latitude,
+        longitude: appointment.longitude,
+      },
+      rankableTechnicians,
+    )
   }
 
   const currentAppointment = pendingAppointments.find((appointment) => appointment.id === selectedAppointment)
@@ -98,10 +127,23 @@ export function MechanicAssignmentPanel({
     : ""
 
   const selectedMechanicId = selectedAppointment ? assignedMechanics[selectedAppointment] : undefined
+  const rankedMechanics = getRankedMechanics(currentAppointment)
   const selectedMechanic = currentAppointment
-    ? getAvailableMechanics(currentAppointment.zip_code).find((mechanic) => mechanic.id === selectedMechanicId)
+    ? rankedMechanics.find((match) => match.mechanic.id === selectedMechanicId)?.mechanic
     : undefined
-  const currentServiceArea = currentAppointment ? getServiceAreaForZip(currentAppointment.zip_code) : null
+
+  const getDistanceLabel = (category: MechanicDistanceCategory) => {
+    switch (category) {
+      case "near":
+        return t("assign.distanceNear")
+      case "intermediate":
+        return t("assign.distanceIntermediate")
+      case "far":
+        return t("assign.distanceFar")
+      case "optional":
+        return t("assign.distanceOptional")
+    }
+  }
 
   const handleSendSms = async () => {
     if (!selectedAppointment || !selectedMechanic) {
@@ -237,32 +279,48 @@ export function MechanicAssignmentPanel({
                 <p className="font-medium">{formatLocalDate(currentAppointment.appointment_date)}</p>
               </div>
               <div className="col-span-2">
-                <p className="text-muted-foreground">{t("assign.serviceArea")}</p>
+                <p className="text-muted-foreground">{t("assign.appointmentLocation")}</p>
                 <div className="mt-1 flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-primary" />
-                  <p className="font-medium">
-                    {currentServiceArea || t("assign.unknown")}
+                  <p className="font-medium leading-snug">
+                    {currentAppointment.address || t("assign.unknown")}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="border-t pt-4">
-              <p className="mb-3 text-sm font-medium">{t("assign.availableMechanics")}</p>
+              <div className="mb-3">
+                <p className="text-sm font-medium">{t("assign.availableMechanics")}</p>
+                <p className="text-xs text-muted-foreground">{t("assign.distanceHelper")}</p>
+              </div>
               <div className="space-y-2">
-                {getAvailableMechanics(currentAppointment.zip_code).map((mechanic) => (
-                  <div
+                {rankedMechanics.map(({ mechanic, distanceMiles, category, rank }) => (
+                  <button
+                    type="button"
                     key={mechanic.id}
-                    className={`cursor-pointer rounded-lg border-2 p-3 transition-all ${assignedMechanics[selectedAppointment] === mechanic.id
+                    className={`w-full cursor-pointer rounded-xl border-2 p-3 text-left transition-all ${assignedMechanics[selectedAppointment] === mechanic.id
                       ? "border-primary bg-primary/5"
                       : "border-muted hover:border-primary/50"
                       }`}
                     onClick={() => handleAssignMechanic(selectedAppointment, mechanic.id)}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex-1">
-                        <p className="font-medium">{mechanic.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{mechanic.phone}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{mechanic.name}</p>
+                          {rank <= 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              #{rank} {t("assign.recommended")}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {mechanic.address || t("assign.techLocationMissing")}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          ZIP {mechanic.zip_code || t("assign.unknown")} | {mechanic.phone}
+                        </p>
                         {(mechanic.specialties || []).length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {(mechanic.specialties || []).map((specialty) => (
@@ -273,22 +331,30 @@ export function MechanicAssignmentPanel({
                           </div>
                         )}
                       </div>
-                      <Badge
-                        className={
-                          (mechanic.availability || "available") === "available"
-                            ? "bg-green-600"
-                            : "bg-yellow-600"
-                        }
-                      >
-                        {(mechanic.availability || "available") === "available" ? t("assign.available") : t("assign.busy")}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <Badge variant="outline" className={DISTANCE_CATEGORY_STYLES[category]}>
+                          {getDistanceLabel(category)}
+                        </Badge>
+                        <Badge variant="outline">
+                          {distanceMiles.toFixed(1)} mi
+                        </Badge>
+                        <Badge
+                          className={
+                            (mechanic.availability || "available") === "available"
+                              ? "bg-green-600"
+                              : "bg-yellow-600"
+                          }
+                        >
+                          {(mechanic.availability || "available") === "available" ? t("assign.available") : t("assign.busy")}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
 
-            {!getAvailableMechanics(currentAppointment.zip_code).length && (
+            {!rankedMechanics.length && (
               <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
                 <p className="text-sm text-yellow-800">
                   {t("assign.noMechanics")}

@@ -15,6 +15,8 @@ const appointmentSchema = z.object({
   phone: z.string().trim().min(7).max(32),
   zipCode: z.string().trim().regex(/^\d{5}$/),
   address: z.string().trim().min(5).max(160),
+  latitude: z.number().finite().optional().nullable(),
+  longitude: z.number().finite().optional().nullable(),
   additionalInfo: z.string().trim().max(500).optional().or(z.literal("")),
   appointmentDate: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/),
   appointmentHour: z.number().int().min(0).max(23),
@@ -89,28 +91,62 @@ export async function POST(request: Request) {
     const appointmentDateValue = input.appointmentDate
     const appointmentTimeValue = `${String(input.appointmentHour).padStart(2, "0")}:00:00`
 
-    const { data, error } = await supabaseAdmin
+    const appointmentPayload = {
+      first_name: input.firstName,
+      last_name: input.lastName,
+      email: input.email,
+      phone: input.phone,
+      zip_code: input.zipCode,
+      address: input.address,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+      additional_info: input.additionalInfo || null,
+      appointment_date: appointmentDateValue,
+      appointment_time: appointmentTimeValue,
+      status: "pending",
+      vehicle_year: input.vehicleYear,
+      vehicle_make: input.vehicleMake,
+      vehicle_model: input.vehicleModel,
+      engine_type: input.engineType,
+      service_type: input.serviceType,
+      referral_source: input.referralSource || null,
+    }
+
+    let { data, error } = await supabaseAdmin
       .from("appointments")
-      .insert({
-        first_name: input.firstName,
-        last_name: input.lastName,
-        email: input.email,
-        phone: input.phone,
-        zip_code: input.zipCode,
-        address: input.address,
-        additional_info: input.additionalInfo || null,
-        appointment_date: appointmentDateValue,
-        appointment_time: appointmentTimeValue,
-        status: "pending",
-        vehicle_year: input.vehicleYear,
-        vehicle_make: input.vehicleMake,
-        vehicle_model: input.vehicleModel,
-        engine_type: input.engineType,
-        service_type: input.serviceType,
-        referral_source: input.referralSource || null,
-      })
+      .insert(appointmentPayload)
       .select("id")
       .single()
+
+    if (error && /latitude|longitude/i.test(error.message)) {
+      const legacyPayload = {
+        first_name: appointmentPayload.first_name,
+        last_name: appointmentPayload.last_name,
+        email: appointmentPayload.email,
+        phone: appointmentPayload.phone,
+        zip_code: appointmentPayload.zip_code,
+        address: appointmentPayload.address,
+        additional_info: appointmentPayload.additional_info,
+        appointment_date: appointmentPayload.appointment_date,
+        appointment_time: appointmentPayload.appointment_time,
+        status: appointmentPayload.status,
+        vehicle_year: appointmentPayload.vehicle_year,
+        vehicle_make: appointmentPayload.vehicle_make,
+        vehicle_model: appointmentPayload.vehicle_model,
+        engine_type: appointmentPayload.engine_type,
+        service_type: appointmentPayload.service_type,
+        referral_source: appointmentPayload.referral_source,
+      }
+
+      const retryResult = await supabaseAdmin
+        .from("appointments")
+        .insert(legacyPayload)
+        .select("id")
+        .single()
+
+      data = retryResult.data
+      error = retryResult.error
+    }
 
     if (error || !data) {
       throw error || new Error("Appointment could not be created")

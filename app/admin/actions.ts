@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 import { formatLocalDate } from "@/lib/date-utils"
+import { geocodeAddressForDistance } from "@/lib/server-geocode"
 import { sendTwilioSms } from "@/lib/twilio"
 import bcrypt from "bcryptjs"
 import type { ReviewStatus } from "@/lib/reviews"
@@ -121,10 +122,10 @@ interface SendMechanicAssignmentSmsInput {
 
 interface CreateTechnicianInput {
   name: string
-  area?: string
+  zipCode?: string
+  address?: string
   phone?: string
   countryCode?: string
-  joinDate?: string
 }
 
 function formatTimeSlot(time?: string | null) {
@@ -272,23 +273,40 @@ export async function sendMechanicAssignmentSms({
   }
 }
 
-export async function createTechnician({ name, area, phone, countryCode, joinDate }: CreateTechnicianInput) {
+export async function createTechnician({ name, zipCode, address, phone, countryCode }: CreateTechnicianInput) {
   const session = await getAdminSession()
   if (!session) {
     return { error: "Unauthorized" }
   }
 
   const cleanName = name.trim()
-  const cleanArea = area?.trim() || "General"
+  const cleanZipCode = (zipCode || "").replace(/\D/g, "").slice(0, 5)
+  const cleanAddress = address?.trim() || ""
   const normalizedPhone = normalizePhoneToE164(phone || "", countryCode)
-  const cleanJoinDate = joinDate?.trim() || null
 
   if (!cleanName) {
     return { error: "Technician name is required." }
   }
 
+  if (cleanZipCode.length !== 5) {
+    return { error: "Technician ZIP code must be exactly 5 digits." }
+  }
+
+  if (!cleanAddress) {
+    return { error: "Technician address is required." }
+  }
+
   if (!normalizedPhone) {
     return { error: "A valid international phone number is required for SMS assignments." }
+  }
+
+  const geocodedAddress = await geocodeAddressForDistance(cleanAddress, cleanZipCode)
+  if (
+    !geocodedAddress.valid ||
+    typeof geocodedAddress.latitude !== "number" ||
+    typeof geocodedAddress.longitude !== "number"
+  ) {
+    return { error: "Could not verify the technician address with that ZIP code." }
   }
 
   const supabase = await getSupabaseServerClient()
@@ -297,13 +315,17 @@ export async function createTechnician({ name, area, phone, countryCode, joinDat
     .from("technicians")
     .insert({
       name: cleanName,
-      area: cleanArea,
+      area: "Location based",
+      zip_code: cleanZipCode,
+      address: geocodedAddress.normalizedAddress || cleanAddress,
+      latitude: geocodedAddress.latitude,
+      longitude: geocodedAddress.longitude,
       phone: normalizedPhone,
-      join_date: cleanJoinDate,
+      join_date: null,
       availability: "available",
       specialties: [],
     })
-    .select("id, name, area, phone, join_date, availability, specialties, created_at")
+    .select("id, name, area, zip_code, address, latitude, longitude, phone, join_date, availability, specialties, created_at")
     .single()
 
   if (error || !data) {

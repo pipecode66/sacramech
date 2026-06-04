@@ -15,6 +15,10 @@ interface Technician {
   id: string
   name: string
   area: string
+  zip_code?: string | null
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
   phone: string | null
   join_date: string | null
   availability?: string | null
@@ -55,10 +59,10 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
   // Technicians state
   const [technicians, setTechnicians] = useState<Technician[]>(initialTechnicians)
   const [newTechName, setNewTechName] = useState("")
-  const [newTechArea, setNewTechArea] = useState("")
+  const [newTechZipCode, setNewTechZipCode] = useState("")
+  const [newTechAddress, setNewTechAddress] = useState("")
   const [newTechCountryCode, setNewTechCountryCode] = useState("+1")
   const [newTechPhone, setNewTechPhone] = useState("")
-  const [newTechJoinDate, setNewTechJoinDate] = useState("")
   const [techAdded, setTechAdded] = useState(false)
   const [techError, setTechError] = useState("")
   const [isSavingTech, setIsSavingTech] = useState(false)
@@ -128,10 +132,10 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
 
     const result = await createTechnician({
       name: newTechName,
-      area: newTechArea,
+      zipCode: newTechZipCode,
+      address: newTechAddress,
       countryCode: newTechCountryCode,
       phone: newTechPhone,
-      joinDate: newTechJoinDate,
     })
 
     if (result.error || !result.success || !result.technician) {
@@ -144,9 +148,9 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
       [...prev, result.technician].sort((a, b) => a.name.localeCompare(b.name))
     )
     setNewTechName("")
-    setNewTechArea("")
+    setNewTechZipCode("")
+    setNewTechAddress("")
     setNewTechPhone("")
-    setNewTechJoinDate("")
     setTechAdded(true)
     setTimeout(() => setTechAdded(false), 3000)
     setIsSavingTech(false)
@@ -246,7 +250,7 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
           <CardDescription>{t("admin.settings.techDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1.2fr_0.8fr]">
             <Input
               placeholder={t("admin.settings.techPlaceholder")}
               value={newTechName}
@@ -254,12 +258,19 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
               onKeyDown={(e) => e.key === "Enter" && handleAddTech()}
             />
             <Input
-              placeholder={t("admin.settings.techAreaPlaceholder")}
-              value={newTechArea}
-              onChange={(e) => setNewTechArea(e.target.value)}
+              placeholder={t("admin.settings.techZipPlaceholder")}
+              value={newTechZipCode}
+              onChange={(e) => setNewTechZipCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
               onKeyDown={(e) => e.key === "Enter" && handleAddTech()}
+              maxLength={5}
             />
           </div>
+          <Input
+            placeholder={t("admin.settings.techAddressPlaceholder")}
+            value={newTechAddress}
+            onChange={(e) => setNewTechAddress(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddTech()}
+          />
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[220px,1fr]">
             <Select value={newTechCountryCode} onValueChange={setNewTechCountryCode}>
               <SelectTrigger>
@@ -281,23 +292,17 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
               maxLength={15}
             />
           </div>
-          <div className="flex gap-2">
-            <Input
-              placeholder={t("admin.settings.joinDate")}
-              type="date"
-              value={newTechJoinDate}
-              onChange={(e) => setNewTechJoinDate(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddTech()}
-            />
-            <Button onClick={handleAddTech} disabled={!newTechName.trim() || isSavingTech}>
-              {isSavingTech ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-1 h-4 w-4" />
-              )}
-              {t("admin.settings.techAdd")}
-            </Button>
-          </div>
+          <Button
+            onClick={handleAddTech}
+            disabled={!newTechName.trim() || !newTechZipCode.trim() || !newTechAddress.trim() || !newTechPhone.trim() || isSavingTech}
+          >
+            {isSavingTech ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-1 h-4 w-4" />
+            )}
+            {t("admin.settings.techAdd")}
+          </Button>
 
           {techError && (
             <p className="text-sm text-destructive">{techError}</p>
@@ -318,9 +323,9 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
               >
                 <div className="flex-1">
                   <p className="text-sm font-medium">{tech.name}</p>
-                  <p className="text-xs text-muted-foreground">{tech.area}</p>
+                  {tech.zip_code && <p className="text-xs text-muted-foreground">ZIP: {tech.zip_code}</p>}
+                  {tech.address && <p className="text-xs text-muted-foreground">{tech.address}</p>}
                   {tech.phone && <p className="text-xs text-muted-foreground">{tech.phone}</p>}
-                  {tech.join_date && <p className="text-xs text-muted-foreground">{t("admin.settings.joined")}: {tech.join_date}</p>}
                 </div>
                 <button
                   onClick={() => handleRemoveTech(tech.id)}

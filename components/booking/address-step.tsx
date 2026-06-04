@@ -12,7 +12,7 @@ import { formatResolvedAddress, type ZipLocation } from "@/lib/zip-city"
 
 interface AddressStepProps {
   zipCode: string
-  onNext: (address: string) => void
+  onNext: (address: string, coordinates?: { latitude: number | null; longitude: number | null }) => void
   onBack: () => void
 }
 
@@ -134,6 +134,8 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
         county?: string
         state?: string
         normalizedAddress?: string
+        latitude?: number
+        longitude?: number
       }
 
       if (!response.ok || !result.valid) {
@@ -148,7 +150,10 @@ export function AddressStep({ zipCode, onNext, onBack }: AddressStepProps) {
       }
 
       setLocation(validatedLocation)
-      onNext(result.normalizedAddress || formatResolvedAddress(trimmedStreet, validatedLocation, zipCode))
+      onNext(result.normalizedAddress || formatResolvedAddress(trimmedStreet, validatedLocation, zipCode), {
+        latitude: typeof result.latitude === "number" ? result.latitude : null,
+        longitude: typeof result.longitude === "number" ? result.longitude : null,
+      })
     } catch (error) {
       console.error("Address validation request failed:", error)
       setValidationErrorCode("VALIDATION_ERROR")

@@ -12,6 +12,10 @@ interface TechnicianRecord {
   id: string
   name: string
   area: string
+  zip_code?: string | null
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
   phone: string | null
   join_date: string | null
   availability?: string | null
@@ -45,7 +49,7 @@ export default async function AdminDashboardPage() {
     const supabaseAdmin = getSupabaseAdminClient()
     const { data: techniciansData } = await supabaseAdmin
       .from("technicians")
-      .select("id, name, area, phone, join_date, availability, specialties, created_at")
+      .select("id, name, area, zip_code, address, latitude, longitude, phone, join_date, availability, specialties, created_at")
       .order("name", { ascending: true })
 
     technicians = techniciansData || []

@@ -3,12 +3,21 @@ CREATE TABLE IF NOT EXISTS technicians (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   area TEXT NOT NULL DEFAULT 'General',
+  zip_code TEXT,
+  address TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
   phone TEXT NOT NULL,
   join_date DATE,
   availability TEXT NOT NULL DEFAULT 'available',
   specialties TEXT[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS zip_code TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 
 ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
 

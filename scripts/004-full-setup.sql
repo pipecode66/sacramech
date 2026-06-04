@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS appointments (
   phone TEXT NOT NULL,
   zip_code TEXT NOT NULL,
   address TEXT NOT NULL,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
   appointment_date DATE NOT NULL,
   appointment_time TEXT,
   status TEXT DEFAULT 'pending',
@@ -34,6 +36,8 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS engine_type TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS service_type TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS referral_source TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assigned_mechanic TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 
 -- 3. Create admin_users table
 CREATE TABLE IF NOT EXISTS admin_users (
@@ -69,12 +73,21 @@ CREATE TABLE IF NOT EXISTS technicians (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   area TEXT NOT NULL DEFAULT 'General',
+  zip_code TEXT,
+  address TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
   phone TEXT NOT NULL,
   join_date DATE,
   availability TEXT NOT NULL DEFAULT 'available',
   specialties TEXT[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS zip_code TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 
 -- 7. Create service ZIP codes table
 CREATE TABLE IF NOT EXISTS service_zip_codes (
@@ -112,6 +125,12 @@ CREATE POLICY "Allow all operations on technicians" ON technicians
 
 CREATE POLICY "Allow all operations on service_zip_codes" ON service_zip_codes
   FOR ALL USING (true) WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS technicians_zip_code_idx
+  ON technicians (zip_code);
+
+CREATE INDEX IF NOT EXISTS appointments_zip_code_idx
+  ON appointments (zip_code);
 
 -- 11. Insert default admin user (password: admin0815)
 -- Using a proper bcrypt hash for 'admin0815'

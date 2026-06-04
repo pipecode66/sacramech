@@ -22,6 +22,8 @@ interface BookingData {
   engineType: string
   serviceType: string
   address: string
+  latitude: number | null
+  longitude: number | null
   additionalInfo: string
   firstName: string
   lastName: string
@@ -51,6 +53,8 @@ export function BookingFlow({
     engineType: "",
     serviceType: "",
     address: "",
+    latitude: null,
+    longitude: null,
     additionalInfo: "",
     firstName: "",
     lastName: "",
@@ -76,8 +80,13 @@ export function BookingFlow({
     setStep("address")
   }
 
-  const handleAddressNext = (address: string) => {
-    setBookingData((prev) => ({ ...prev, address }))
+  const handleAddressNext = (address: string, coordinates?: { latitude: number | null; longitude: number | null }) => {
+    setBookingData((prev) => ({
+      ...prev,
+      address,
+      latitude: coordinates?.latitude ?? null,
+      longitude: coordinates?.longitude ?? null,
+    }))
     setStep("map")
   }
 
@@ -106,6 +115,8 @@ export function BookingFlow({
           phone: bookingData.phone,
           zipCode: bookingData.zipCode,
           address: bookingData.address,
+          latitude: bookingData.latitude,
+          longitude: bookingData.longitude,
           additionalInfo: bookingData.additionalInfo,
           appointmentDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
           appointmentHour: date.getHours(),
@@ -151,6 +162,8 @@ export function BookingFlow({
       engineType: "",
       serviceType: "",
       address: "",
+      latitude: null,
+      longitude: null,
       additionalInfo: "",
       firstName: "",
       lastName: "",

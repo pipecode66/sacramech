@@ -8,7 +8,7 @@ export async function GET() {
     // Test if the expected columns exist by trying to select them
     const { error } = await supabase
       .from("appointments")
-      .select("vehicle_year, vehicle_make, vehicle_model, engine_type, service_type, referral_source, assigned_mechanic")
+      .select("vehicle_year, vehicle_make, vehicle_model, engine_type, service_type, referral_source, assigned_mechanic, latitude, longitude")
       .limit(1)
 
     const { error: reviewsError } = await supabase
@@ -18,7 +18,7 @@ export async function GET() {
 
     const { error: techniciansError } = await supabase
       .from("technicians")
-      .select("id")
+      .select("id, zip_code, address, latitude, longitude")
       .limit(1)
 
     const { error: serviceZipCodesError } = await supabase
@@ -37,6 +37,8 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS engine_type TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS service_type TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS referral_source TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assigned_mechanic TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 
 CREATE TABLE IF NOT EXISTS reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -56,12 +58,21 @@ CREATE TABLE IF NOT EXISTS technicians (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   area TEXT NOT NULL DEFAULT 'General',
+  zip_code TEXT,
+  address TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
   phone TEXT NOT NULL,
   join_date DATE,
   availability TEXT NOT NULL DEFAULT 'available',
   specialties TEXT[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS zip_code TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
 
 ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all operations on technicians" ON technicians;

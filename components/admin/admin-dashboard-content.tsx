@@ -24,6 +24,8 @@ interface Appointment {
   phone: string
   zip_code: string
   address: string
+  latitude?: number | null
+  longitude?: number | null
   appointment_date: string
   status: string
   created_at: string
@@ -38,6 +40,10 @@ interface Technician {
   id: string
   name: string
   area: string
+  zip_code?: string | null
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
   phone: string | null
   join_date: string | null
   availability?: string | null
