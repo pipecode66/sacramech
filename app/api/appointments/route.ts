@@ -4,6 +4,9 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
+import { parseStoredAddress } from "@/lib/address-display"
+import { geocodeAddressForDistance } from "@/lib/server-geocode"
+import { isServiceZipCode } from "@/lib/service-zip-codes"
 import { sendTwilioSms } from "@/lib/twilio"
 
 export const runtime = "nodejs"
@@ -84,6 +87,17 @@ export async function POST(request: Request) {
     }
 
     const input = parsed.data
+    if (!(await isServiceZipCode(input.zipCode))) {
+      return NextResponse.json({ error: "UNSUPPORTED_ZIP" }, { status: 400 })
+    }
+
+    const parsedAddress = parseStoredAddress(input.address, input.zipCode)
+    const streetForValidation = parsedAddress.streetLine || input.address
+    const validatedAddress = await geocodeAddressForDistance(streetForValidation, input.zipCode)
+    if (!validatedAddress.valid) {
+      return NextResponse.json({ error: validatedAddress.error || "ADDRESS_NOT_FOUND" }, { status: 400 })
+    }
+
     const [year, month, day] = input.appointmentDate.split("-").map(Number)
     const appointmentDate = new Date(year, month - 1, day, input.appointmentHour, 0, 0, 0)
 
@@ -97,9 +111,9 @@ export async function POST(request: Request) {
       email: input.email,
       phone: input.phone,
       zip_code: input.zipCode,
-      address: input.address,
-      latitude: input.latitude ?? null,
-      longitude: input.longitude ?? null,
+      address: validatedAddress.normalizedAddress || input.address,
+      latitude: validatedAddress.latitude ?? input.latitude ?? null,
+      longitude: validatedAddress.longitude ?? input.longitude ?? null,
       additional_info: input.additionalInfo || null,
       appointment_date: appointmentDateValue,
       appointment_time: appointmentTimeValue,

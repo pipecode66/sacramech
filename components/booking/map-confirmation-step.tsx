@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { MapPin, ArrowLeft, Check, AlertCircle, MessageSquare } from "lucide-react"
+import { MapPin, ArrowLeft, Check, AlertCircle, Loader2, MessageSquare } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
+import { parseStoredAddress } from "@/lib/address-display"
 
 interface MapConfirmationStepProps {
   address: string
@@ -18,8 +19,65 @@ interface MapConfirmationStepProps {
 export function MapConfirmationStep({ address, onConfirm, onBack }: MapConfirmationStepProps) {
   const { t } = useI18n()
   const [additionalInfo, setAdditionalInfo] = useState("")
+  const [isRevalidating, setIsRevalidating] = useState(false)
+  const [validationErrorCode, setValidationErrorCode] = useState<string | null>(null)
   const encodedAddress = encodeURIComponent(address)
   const mapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedAddress}&zoom=16`
+
+  const getValidationErrorMessage = (error: string | null) => {
+    switch (error) {
+      case "ADDRESS_ZIP_MISMATCH":
+        return t("address.addressZipMismatch")
+      case "ADDRESS_NOT_FOUND":
+        return t("address.addressNotFound")
+      case "UNSUPPORTED_ZIP":
+        return t("address.unsupportedZip")
+      case "INVALID_REQUEST":
+        return t("address.addressIncomplete")
+      default:
+        return t("map.validationError")
+    }
+  }
+
+  const handleConfirm = async () => {
+    const parsedAddress = parseStoredAddress(address)
+    const street = parsedAddress.streetLine.trim()
+    const zipCode = parsedAddress.zipCode
+
+    if (!street || !zipCode) {
+      setValidationErrorCode("INVALID_REQUEST")
+      return
+    }
+
+    setIsRevalidating(true)
+    setValidationErrorCode(null)
+
+    try {
+      const response = await fetch("/api/validate-address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          street,
+          zipCode,
+        }),
+      })
+
+      const result = (await response.json()) as { valid?: boolean; error?: string }
+      if (!response.ok || !result.valid) {
+        setValidationErrorCode(result.error || "VALIDATION_ERROR")
+        return
+      }
+
+      onConfirm(additionalInfo)
+    } catch (error) {
+      console.error("Map confirmation address validation failed:", error)
+      setValidationErrorCode("VALIDATION_ERROR")
+    } finally {
+      setIsRevalidating(false)
+    }
+  }
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -86,14 +144,26 @@ export function MapConfirmationStep({ address, onConfirm, onBack }: MapConfirmat
           </AlertDescription>
         </Alert>
 
+        {validationErrorCode && (
+          <Alert className="border-destructive/30 bg-destructive/10 text-destructive">
+            <AlertCircle className="mt-0.5 h-5 w-5" />
+            <AlertTitle>{t("map.validationTitle")}</AlertTitle>
+            <AlertDescription>{getValidationErrorMessage(validationErrorCode)}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={onBack} className="flex-1 bg-transparent">
             <ArrowLeft className="w-4 h-4 mr-2" />
             {t("map.editAddress")}
           </Button>
-          <Button type="button" onClick={() => onConfirm(additionalInfo)} className="flex-1">
-            <Check className="w-4 h-4 mr-2" />
-            {t("map.confirm")}
+          <Button type="button" onClick={handleConfirm} className="flex-1" disabled={isRevalidating}>
+            {isRevalidating ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Check className="w-4 h-4 mr-2" />
+            )}
+            {isRevalidating ? t("address.validating") : t("map.confirm")}
           </Button>
         </div>
       </CardContent>
