@@ -55,7 +55,7 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header onLogoClick={handleLogoClick} />
 
       <main className="flex-1">
         <section ref={bookingSectionRef} className="py-10 sm:py-14">
