@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import Image from "next/image"
 import { Header } from "@/components/header"
 import { BookingFlow } from "@/components/booking/booking-flow"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
@@ -54,11 +55,31 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header onLogoClick={handleLogoClick} />
+      <Header />
 
       <main className="flex-1">
-        <section ref={bookingSectionRef} className="py-16">
+        <section ref={bookingSectionRef} className="py-10 sm:py-14">
           <div className="container mx-auto px-4">
+            <div className="mb-5 flex justify-center sm:mb-6">
+              <button
+                type="button"
+                onClick={handleLogoClick}
+                className="group rounded-[2rem] border border-border/70 bg-background p-2 transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:rounded-[2.5rem] sm:p-3"
+                aria-label="Return to the start of the booking form"
+              >
+                <span className="relative block h-28 w-28 overflow-hidden rounded-[1.65rem] bg-background sm:h-36 sm:w-36 sm:rounded-[2rem] md:h-40 md:w-40">
+                  <Image
+                    src="/rapi-logo.jpeg"
+                    alt="Rapi Mobile Mechanic logo"
+                    fill
+                    priority
+                    className="object-contain p-2 transition-transform group-hover:scale-[1.03] sm:p-3"
+                    sizes="(max-width: 640px) 112px, (max-width: 768px) 144px, 160px"
+                  />
+                </span>
+              </button>
+            </div>
+
             <div className="text-center mb-6 md:mb-8">
               <h2 className="text-2xl font-bold text-foreground sm:text-3xl">{t("booking.title")}</h2>
             </div>
