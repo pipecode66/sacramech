@@ -38,6 +38,8 @@ interface Technician {
   join_date: string | null
   availability?: string | null
   specialties?: string[] | null
+  sms_consent?: boolean | null
+  sms_consent_at?: string | null
 }
 
 interface MechanicAssignmentPanelProps {
@@ -160,8 +162,6 @@ export function MechanicAssignmentPanel({
     const result = await sendMechanicAssignmentSms({
       appointmentId: selectedAppointment,
       mechanicId: selectedMechanic.id,
-      mechanicName: selectedMechanic.name,
-      mechanicPhone: selectedMechanic.phone || "",
     })
 
     if (result.success) {
@@ -321,6 +321,17 @@ export function MechanicAssignmentPanel({
                         <p className="mt-1 text-xs text-muted-foreground">
                           ZIP {mechanic.zip_code || t("assign.unknown")} | {mechanic.phone}
                         </p>
+                        <Badge
+                          variant="outline"
+                          className={`mt-2 text-xs ${mechanic.sms_consent
+                            ? "border-green-200 bg-green-50 text-green-800"
+                            : "border-red-200 bg-red-50 text-red-800"
+                            }`}
+                        >
+                          {mechanic.sms_consent
+                            ? t("admin.settings.techSmsConsentRecorded")
+                            : t("admin.settings.techSmsConsentMissing")}
+                        </Badge>
                         {(mechanic.specialties || []).length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {(mechanic.specialties || []).map((specialty) => (
@@ -364,11 +375,16 @@ export function MechanicAssignmentPanel({
 
             <div className="space-y-2 border-t pt-4">
               <p className="text-xs text-muted-foreground">{t("assign.smsHelper")}</p>
+              {selectedMechanic && !selectedMechanic.sms_consent && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  {t("assign.smsConsentRequired")}
+                </div>
+              )}
               <Button
                 type="button"
                 className="w-full"
                 onClick={handleSendSms}
-                disabled={!selectedMechanic || isSendingSms}
+                disabled={!selectedMechanic || !selectedMechanic.sms_consent || isSendingSms}
               >
                 {isSendingSms ? (
                   <>

@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS technicians (
   join_date DATE,
   availability TEXT NOT NULL DEFAULT 'available',
   specialties TEXT[] NOT NULL DEFAULT '{}',
+  sms_consent BOOLEAN NOT NULL DEFAULT FALSE,
+  sms_consent_at TIMESTAMP WITH TIME ZONE,
+  sms_consent_source TEXT,
+  sms_consent_version TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -18,6 +22,10 @@ ALTER TABLE technicians ADD COLUMN IF NOT EXISTS zip_code TEXT;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS address TEXT;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_source TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_version TEXT;
 
 ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
 

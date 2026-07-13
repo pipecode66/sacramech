@@ -8,7 +8,7 @@ export async function GET() {
     // Test if the expected columns exist by trying to select them
     const { error } = await supabase
       .from("appointments")
-      .select("vehicle_year, vehicle_make, vehicle_model, engine_type, service_type, referral_source, assigned_mechanic, latitude, longitude")
+      .select("vehicle_year, vehicle_make, vehicle_model, engine_type, service_type, referral_source, assigned_mechanic, latitude, longitude, sms_consent, sms_consent_at, sms_consent_source, sms_consent_version, sms_consent_locale")
       .limit(1)
 
     const { error: reviewsError } = await supabase
@@ -18,7 +18,7 @@ export async function GET() {
 
     const { error: techniciansError } = await supabase
       .from("technicians")
-      .select("id, zip_code, address, latitude, longitude")
+      .select("id, zip_code, address, latitude, longitude, sms_consent, sms_consent_at, sms_consent_source, sms_consent_version")
       .limit(1)
 
     const { error: serviceZipCodesError } = await supabase
@@ -39,6 +39,11 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS referral_source TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assigned_mechanic TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent_source TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent_version TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent_locale TEXT;
 
 CREATE TABLE IF NOT EXISTS reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -73,6 +78,10 @@ ALTER TABLE technicians ADD COLUMN IF NOT EXISTS zip_code TEXT;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS address TEXT;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_source TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_version TEXT;
 
 ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all operations on technicians" ON technicians;

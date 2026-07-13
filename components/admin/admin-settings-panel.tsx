@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MapPin, Users, Plus, X, CheckCircle2, Loader2 } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
-import { createServiceZip, createTechnician, deleteServiceZip, deleteTechnician } from "@/app/admin/actions"
+import { createServiceZip, createTechnician, deleteServiceZip, deleteTechnician, updateTechnicianSmsConsent } from "@/app/admin/actions"
 
 interface Technician {
   id: string
@@ -23,6 +25,8 @@ interface Technician {
   join_date: string | null
   availability?: string | null
   specialties?: string[] | null
+  sms_consent?: boolean | null
+  sms_consent_at?: string | null
 }
 
 interface AdminSettingsPanelProps {
@@ -63,10 +67,12 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
   const [newTechAddress, setNewTechAddress] = useState("")
   const [newTechCountryCode, setNewTechCountryCode] = useState("+1")
   const [newTechPhone, setNewTechPhone] = useState("")
+  const [newTechSmsConsent, setNewTechSmsConsent] = useState(false)
   const [techAdded, setTechAdded] = useState(false)
   const [techError, setTechError] = useState("")
   const [isSavingTech, setIsSavingTech] = useState(false)
   const [deletingTechId, setDeletingTechId] = useState<string | null>(null)
+  const [updatingTechConsentId, setUpdatingTechConsentId] = useState<string | null>(null)
 
   useEffect(() => {
     setTechnicians(initialTechnicians)
@@ -136,6 +142,7 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
       address: newTechAddress,
       countryCode: newTechCountryCode,
       phone: newTechPhone,
+      smsConsent: newTechSmsConsent,
     })
 
     if (result.error || !result.success || !result.technician) {
@@ -151,6 +158,7 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
     setNewTechZipCode("")
     setNewTechAddress("")
     setNewTechPhone("")
+    setNewTechSmsConsent(false)
     setTechAdded(true)
     setTimeout(() => setTechAdded(false), 3000)
     setIsSavingTech(false)
@@ -173,6 +181,28 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
 
     setTechnicians((prev) => prev.filter((tech) => tech.id !== id))
     setDeletingTechId(null)
+    router.refresh()
+  }
+
+  const handleTechConsentChange = async (technicianId: string, smsConsent: boolean) => {
+    if (updatingTechConsentId) return
+
+    setTechError("")
+    setUpdatingTechConsentId(technicianId)
+
+    const result = await updateTechnicianSmsConsent(technicianId, smsConsent)
+    if (!result.success) {
+      setTechError(result.error || "Could not update technician SMS consent.")
+      setUpdatingTechConsentId(null)
+      return
+    }
+
+    setTechnicians((prev) => prev.map((tech) => (
+      tech.id === technicianId
+        ? { ...tech, sms_consent: smsConsent, sms_consent_at: smsConsent ? new Date().toISOString() : null }
+        : tech
+    )))
+    setUpdatingTechConsentId(null)
     router.refresh()
   }
 
@@ -292,6 +322,24 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
               maxLength={15}
             />
           </div>
+          <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-3">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="newTechSmsConsent"
+                checked={newTechSmsConsent}
+                onCheckedChange={(checked) => setNewTechSmsConsent(checked === true)}
+                className="mt-0.5"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="newTechSmsConsent" className="cursor-pointer text-sm font-medium leading-5">
+                  {t("admin.settings.techSmsConsent")}
+                </Label>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("admin.settings.techSmsConsentHelp")}
+                </p>
+              </div>
+            </div>
+          </div>
           <Button
             onClick={handleAddTech}
             disabled={!newTechName.trim() || !newTechZipCode.trim() || !newTechAddress.trim() || !newTechPhone.trim() || isSavingTech}
@@ -326,6 +374,20 @@ export function AdminSettingsPanel({ technicians: initialTechnicians, serviceZip
                   {tech.zip_code && <p className="text-xs text-muted-foreground">ZIP: {tech.zip_code}</p>}
                   {tech.address && <p className="text-xs text-muted-foreground">{tech.address}</p>}
                   {tech.phone && <p className="text-xs text-muted-foreground">{tech.phone}</p>}
+                  <div className="mt-2 flex items-center gap-2">
+                    <Checkbox
+                      id={`tech-sms-consent-${tech.id}`}
+                      checked={Boolean(tech.sms_consent)}
+                      disabled={updatingTechConsentId === tech.id}
+                      onCheckedChange={(checked) => void handleTechConsentChange(tech.id, checked === true)}
+                    />
+                    <Label htmlFor={`tech-sms-consent-${tech.id}`} className="cursor-pointer text-xs">
+                      {tech.sms_consent
+                        ? t("admin.settings.techSmsConsentRecorded")
+                        : t("admin.settings.techSmsConsentMissing")}
+                    </Label>
+                    {updatingTechConsentId === tech.id && <Loader2 className="h-3 w-3 animate-spin" />}
+                  </div>
                 </div>
                 <button
                   onClick={() => handleRemoveTech(tech.id)}

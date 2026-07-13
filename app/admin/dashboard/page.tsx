@@ -20,6 +20,10 @@ interface TechnicianRecord {
   join_date: string | null
   availability?: string | null
   specialties?: string[] | null
+  sms_consent?: boolean | null
+  sms_consent_at?: string | null
+  sms_consent_source?: string | null
+  sms_consent_version?: string | null
 }
 
 export default async function AdminDashboardPage() {
@@ -47,10 +51,30 @@ export default async function AdminDashboardPage() {
 
   try {
     const supabaseAdmin = getSupabaseAdminClient()
-    const { data: techniciansData } = await supabaseAdmin
+    let { data: techniciansData, error: techniciansError } = await supabaseAdmin
       .from("technicians")
-      .select("id, name, area, zip_code, address, latitude, longitude, phone, join_date, availability, specialties, created_at")
+      .select("id, name, area, zip_code, address, latitude, longitude, phone, join_date, availability, specialties, sms_consent, sms_consent_at, sms_consent_source, sms_consent_version, created_at")
       .order("name", { ascending: true })
+
+    if (techniciansError && /sms_consent/i.test(techniciansError.message)) {
+      const legacyResult = await supabaseAdmin
+        .from("technicians")
+        .select("id, name, area, zip_code, address, latitude, longitude, phone, join_date, availability, specialties, created_at")
+        .order("name", { ascending: true })
+
+      techniciansData = (legacyResult.data || []).map((technician) => ({
+        ...technician,
+        sms_consent: false,
+        sms_consent_at: null,
+        sms_consent_source: null,
+        sms_consent_version: null,
+      }))
+      techniciansError = legacyResult.error
+    }
+
+    if (techniciansError) {
+      throw techniciansError
+    }
 
     technicians = techniciansData || []
   } catch (error) {

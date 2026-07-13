@@ -10,6 +10,7 @@ import { geocodeAddressForDistance } from "@/lib/server-geocode"
 import { sendTwilioSms } from "@/lib/twilio"
 import bcrypt from "bcryptjs"
 import type { ReviewStatus } from "@/lib/reviews"
+import { TECHNICIAN_SMS_CONSENT_SOURCE, TECHNICIAN_SMS_CONSENT_VERSION } from "@/lib/business"
 
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string
@@ -116,8 +117,6 @@ export async function deleteAppointment(appointmentId: string) {
 interface SendMechanicAssignmentSmsInput {
   appointmentId: string
   mechanicId: string
-  mechanicName: string
-  mechanicPhone: string
 }
 
 interface CreateTechnicianInput {
@@ -126,6 +125,7 @@ interface CreateTechnicianInput {
   address?: string
   phone?: string
   countryCode?: string
+  smsConsent?: boolean
 }
 
 function formatTimeSlot(time?: string | null) {
@@ -175,6 +175,7 @@ function buildMechanicAssignmentSms(appointment: {
     dateLabel ? `Date: ${dateLabel}${timeLabel ? ` (${timeLabel})` : ""}` : null,
     appointment.address ? `Address: ${appointment.address}` : null,
     notes ? `Notes: ${notes.slice(0, 220)}` : null,
+    "Message frequency varies. Msg & data rates may apply. Reply HELP for help or STOP to opt out.",
   ].filter(Boolean)
 
   return lines.join("\n")
@@ -218,28 +219,51 @@ function normalizePhoneToE164(rawPhone: string, countryCode?: string): string | 
 export async function sendMechanicAssignmentSms({
   appointmentId,
   mechanicId,
-  mechanicName,
-  mechanicPhone,
 }: SendMechanicAssignmentSmsInput) {
   const session = await getAdminSession()
   if (!session) {
     return { error: "Unauthorized" }
   }
 
-  if (!appointmentId || !mechanicId || !mechanicName || !mechanicPhone) {
+  if (!appointmentId || !mechanicId) {
     return { error: "Missing assignment data." }
   }
 
   const supabase = await getSupabaseServerClient()
 
-  const { data: appointment, error } = await supabase
-    .from("appointments")
-    .select("id, first_name, last_name, phone, address, appointment_date, appointment_time, service_type, vehicle_year, vehicle_make, vehicle_model, additional_info")
-    .eq("id", appointmentId)
-    .single()
+  const [appointmentResult, mechanicResult] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("id, first_name, last_name, phone, address, appointment_date, appointment_time, service_type, vehicle_year, vehicle_make, vehicle_model, additional_info")
+      .eq("id", appointmentId)
+      .single(),
+    supabase
+      .from("technicians")
+      .select("id, name, phone, sms_consent")
+      .eq("id", mechanicId)
+      .single(),
+  ])
+
+  const { data: appointment, error } = appointmentResult
+  const { data: mechanic, error: mechanicError } = mechanicResult
 
   if (error || !appointment) {
     return { error: "Appointment not found." }
+  }
+
+  if (mechanicError || !mechanic) {
+    if (mechanicError && /sms_consent/i.test(mechanicError.message)) {
+      return { error: "SMS consent migration is required before sending technician messages." }
+    }
+    return { error: "Technician not found." }
+  }
+
+  if (!mechanic.sms_consent) {
+    return { error: "This technician has not consented to receive assignment SMS messages." }
+  }
+
+  if (!mechanic.phone) {
+    return { error: "This technician does not have a valid phone number." }
   }
 
   const smsBody = buildMechanicAssignmentSms(appointment)
@@ -248,7 +272,7 @@ export async function sendMechanicAssignmentSms({
 
   try {
     smsResult = await sendTwilioSms({
-      to: mechanicPhone,
+      to: mechanic.phone,
       body: smsBody,
     })
   } catch (smsError) {
@@ -258,7 +282,7 @@ export async function sendMechanicAssignmentSms({
 
   const { error: updateError } = await supabase
     .from("appointments")
-    .update({ assigned_mechanic: mechanicId || mechanicName })
+    .update({ assigned_mechanic: mechanicId })
     .eq("id", appointmentId)
 
   if (updateError) {
@@ -273,7 +297,7 @@ export async function sendMechanicAssignmentSms({
   }
 }
 
-export async function createTechnician({ name, zipCode, address, phone, countryCode }: CreateTechnicianInput) {
+export async function createTechnician({ name, zipCode, address, phone, countryCode, smsConsent = false }: CreateTechnicianInput) {
   const session = await getAdminSession()
   if (!session) {
     return { error: "Unauthorized" }
@@ -324,8 +348,12 @@ export async function createTechnician({ name, zipCode, address, phone, countryC
       join_date: null,
       availability: "available",
       specialties: [],
+      sms_consent: smsConsent,
+      sms_consent_at: smsConsent ? new Date().toISOString() : null,
+      sms_consent_source: smsConsent ? TECHNICIAN_SMS_CONSENT_SOURCE : null,
+      sms_consent_version: smsConsent ? TECHNICIAN_SMS_CONSENT_VERSION : null,
     })
-    .select("id, name, area, zip_code, address, latitude, longitude, phone, join_date, availability, specialties, created_at")
+    .select("id, name, area, zip_code, address, latitude, longitude, phone, join_date, availability, specialties, sms_consent, sms_consent_at, sms_consent_source, sms_consent_version, created_at")
     .single()
 
   if (error || !data) {
@@ -334,6 +362,38 @@ export async function createTechnician({ name, zipCode, address, phone, countryC
 
   revalidatePath("/admin/dashboard")
   return { success: true, technician: data }
+}
+
+export async function updateTechnicianSmsConsent(technicianId: string, smsConsent: boolean) {
+  const session = await getAdminSession()
+  if (!session) {
+    return { error: "Unauthorized" }
+  }
+
+  if (!technicianId) {
+    return { error: "Technician id is required." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+  const { error } = await supabase
+    .from("technicians")
+    .update({
+      sms_consent: smsConsent,
+      sms_consent_at: smsConsent ? new Date().toISOString() : null,
+      sms_consent_source: smsConsent ? TECHNICIAN_SMS_CONSENT_SOURCE : null,
+      sms_consent_version: smsConsent ? TECHNICIAN_SMS_CONSENT_VERSION : null,
+    })
+    .eq("id", technicianId)
+
+  if (error) {
+    if (/sms_consent/i.test(error.message)) {
+      return { error: "Run the SMS consent database migration before recording consent." }
+    }
+    return { error: "Failed to update technician SMS consent." }
+  }
+
+  revalidatePath("/admin/dashboard")
+  return { success: true }
 }
 
 export async function deleteTechnician(technicianId: string) {

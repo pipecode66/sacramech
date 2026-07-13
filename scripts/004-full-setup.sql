@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS appointments (
   service_type TEXT,
   referral_source TEXT,
   assigned_mechanic TEXT,
+  sms_consent BOOLEAN NOT NULL DEFAULT FALSE,
+  sms_consent_at TIMESTAMP WITH TIME ZONE,
+  sms_consent_source TEXT,
+  sms_consent_version TEXT,
+  sms_consent_locale TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -38,6 +43,11 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS referral_source TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS assigned_mechanic TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent_source TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent_version TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS sms_consent_locale TEXT;
 
 -- 3. Create admin_users table
 CREATE TABLE IF NOT EXISTS admin_users (
@@ -81,6 +91,10 @@ CREATE TABLE IF NOT EXISTS technicians (
   join_date DATE,
   availability TEXT NOT NULL DEFAULT 'available',
   specialties TEXT[] NOT NULL DEFAULT '{}',
+  sms_consent BOOLEAN NOT NULL DEFAULT FALSE,
+  sms_consent_at TIMESTAMP WITH TIME ZONE,
+  sms_consent_source TEXT,
+  sms_consent_version TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -88,6 +102,10 @@ ALTER TABLE technicians ADD COLUMN IF NOT EXISTS zip_code TEXT;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS address TEXT;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
 ALTER TABLE technicians ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_source TEXT;
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS sms_consent_version TEXT;
 
 -- 7. Create service ZIP codes table
 CREATE TABLE IF NOT EXISTS service_zip_codes (

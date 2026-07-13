@@ -149,6 +149,11 @@ const translations = {
     "details.emailPlaceholder": "john.doe@example.com",
     "details.phone": "Phone Number",
     "details.phonePlaceholder": "(555) 123-4567",
+    "details.phoneHelper": "Your phone number is required for appointment coordination. Receiving text messages is optional.",
+    "details.smsConsentTitle": "I agree to receive appointment text messages",
+    "details.smsConsentDisclosure": "By checking this optional box, you consent to receive appointment confirmations and service updates by SMS from Rapi Mobile Mechanic. Message frequency varies. Message and data rates may apply. Reply HELP for help or STOP to opt out. Consent is not a condition of booking.",
+    "details.smsConsentLegalPrefix": "Read our",
+    "details.smsConsentLegalAnd": "and",
     "details.referral": "How did you find us or hear about us?",
     "details.referralPlaceholder": "Select an option",
     "details.referral.google": "Google Search",
@@ -181,6 +186,8 @@ const translations = {
     "success.location": "Service Location",
     "success.email": "Email",
     "success.phone": "Phone",
+    "success.smsOptedIn": "SMS appointment updates accepted.",
+    "success.smsNotOptedIn": "SMS appointment updates not requested.",
     "success.contactNote": "We will contact you shortly to confirm the appointment.",
     "success.smsWarningTitle": "SMS confirmation was not sent automatically.",
     "success.smsWarningDesc": "Your appointment is saved, but the SMS notification service needs to be checked.",
@@ -193,6 +200,20 @@ const translations = {
     // Footer
     "footer.rights": "All rights reserved.",
     "footer.serving": "Serving many metropolitan areas in California",
+    "footer.privacy": "Privacy Policy",
+    "footer.terms": "Terms of Service",
+    "footer.contact": "Call or text",
+
+    // Public business information
+    "business.eyebrow": "Business Information",
+    "business.title": "Mobile vehicle diagnostics at your location",
+    "business.description": "Rapi Mobile Mechanic provides appointment-based mobile vehicle diagnostics and service coordination at customer locations within approved California ZIP codes.",
+    "business.contactTitle": "Contact",
+    "business.contactDescription": "Questions about an appointment? Call or text our business number.",
+    "business.servicesTitle": "Services",
+    "business.servicesDescription": "Vehicle diagnostics, maintenance assessments, brake diagnostics, battery diagnostics, A/C diagnostics, tire diagnostics, and general inspections.",
+    "business.areaTitle": "Service area",
+    "business.areaDescription": "Mobile appointments are available only in ZIP codes enabled through our booking form.",
 
     // Promo banner
     "promo.buyTitle": "We Buy ANY Vehicle",
@@ -212,6 +233,10 @@ const translations = {
     "admin.settings.techAdd": "Add Technician",
     "admin.settings.techZipPlaceholder": "Technician ZIP code",
     "admin.settings.techAddressPlaceholder": "Technician street address",
+    "admin.settings.techSmsConsent": "I confirm this technician agreed to receive assignment SMS messages.",
+    "admin.settings.techSmsConsentHelp": "Only record consent after the technician has agreed. Message frequency varies; message and data rates may apply; STOP opts out and HELP provides help.",
+    "admin.settings.techSmsConsentRecorded": "SMS consent recorded",
+    "admin.settings.techSmsConsentMissing": "No SMS consent",
 
     // Admin Login
     "admin.backToHome": "Back to Home",
@@ -311,6 +336,7 @@ const translations = {
     "assign.smsSent": "Appointment details sent to mechanic.",
     "assign.smsError": "Could not send SMS to mechanic.",
     "assign.selectMechanicFirst": "Select a mechanic before sending the SMS.",
+    "assign.smsConsentRequired": "SMS is disabled until this technician's consent is recorded in Settings.",
     // Reviews
     "reviews.badge": "Customer feedback",
     "reviews.title": "Reviews and comments from recent customers",
@@ -503,6 +529,11 @@ const translations = {
     "details.emailPlaceholder": "juan.perez@ejemplo.com",
     "details.phone": "Número de Teléfono",
     "details.phonePlaceholder": "(555) 123-4567",
+    "details.phoneHelper": "Tu numero es obligatorio para coordinar la cita. Recibir mensajes de texto es opcional.",
+    "details.smsConsentTitle": "Acepto recibir mensajes de texto sobre mi cita",
+    "details.smsConsentDisclosure": "Al marcar esta casilla opcional, aceptas recibir confirmaciones de citas y actualizaciones del servicio por SMS de Rapi Mobile Mechanic. La frecuencia de mensajes varia. Pueden aplicar tarifas de mensajes y datos. Responde HELP para obtener ayuda o STOP para cancelar. El consentimiento no es una condicion para reservar.",
+    "details.smsConsentLegalPrefix": "Lee nuestra",
+    "details.smsConsentLegalAnd": "y nuestros",
     "details.referral": "¿Cómo nos encontraste o supiste de nosotros?",
     "details.referralPlaceholder": "Selecciona una opción",
     "details.referral.google": "Búsqueda en Google",
@@ -535,6 +566,8 @@ const translations = {
     "success.location": "Ubicación del Servicio",
     "success.email": "Correo Electrónico",
     "success.phone": "Teléfono",
+    "success.smsOptedIn": "Aceptaste actualizaciones de la cita por SMS.",
+    "success.smsNotOptedIn": "No solicitaste actualizaciones por SMS.",
     "success.contactNote": "Nos comunicaremos contigo pronto para confirmar tu cita.",
     "success.smsWarningTitle": "La confirmacion por SMS no se envio automaticamente.",
     "success.smsWarningDesc": "Tu cita quedo guardada, pero se debe revisar el servicio de notificaciones SMS.",
@@ -546,7 +579,21 @@ const translations = {
 
     // Footer
     "footer.rights": "Todos los derechos reservados.",
-    "footer.serving": "Sirviendo el área metropolitana de Sacramento",
+    "footer.serving": "Sirviendo varias areas metropolitanas de California",
+    "footer.privacy": "Politica de Privacidad",
+    "footer.terms": "Terminos de Servicio",
+    "footer.contact": "Llama o escribe",
+
+    // Public business information
+    "business.eyebrow": "Informacion del Negocio",
+    "business.title": "Diagnostico movil de vehiculos en tu ubicacion",
+    "business.description": "Rapi Mobile Mechanic ofrece diagnosticos moviles con cita y coordinacion de servicios en la ubicacion del cliente dentro de codigos postales habilitados en California.",
+    "business.contactTitle": "Contacto",
+    "business.contactDescription": "Tienes preguntas sobre una cita? Llama o escribe a nuestro numero comercial.",
+    "business.servicesTitle": "Servicios",
+    "business.servicesDescription": "Diagnostico vehicular, evaluaciones de mantenimiento, frenos, bateria, aire acondicionado, llantas e inspecciones generales.",
+    "business.areaTitle": "Area de servicio",
+    "business.areaDescription": "Las citas moviles estan disponibles unicamente en los codigos postales habilitados en el formulario de reserva.",
 
     // Promo banner
     "promo.buyTitle": "Compramos CUALQUIER Vehículo",
@@ -566,6 +613,10 @@ const translations = {
     "admin.settings.techAdd": "Agregar Técnico",
     "admin.settings.techZipPlaceholder": "Código postal del técnico",
     "admin.settings.techAddressPlaceholder": "Dirección del técnico",
+    "admin.settings.techSmsConsent": "Confirmo que este tecnico acepto recibir asignaciones por SMS.",
+    "admin.settings.techSmsConsentHelp": "Registra el consentimiento solo despues de que el tecnico lo acepte. La frecuencia varia; pueden aplicar tarifas; STOP cancela y HELP brinda ayuda.",
+    "admin.settings.techSmsConsentRecorded": "Consentimiento SMS registrado",
+    "admin.settings.techSmsConsentMissing": "Sin consentimiento SMS",
 
     // Admin Login
     "admin.backToHome": "Volver al Inicio",
@@ -659,6 +710,7 @@ const translations = {
     "assign.smsSent": "Detalles de la cita enviados al mecanico.",
     "assign.smsError": "No se pudo enviar el SMS al mecanico.",
     "assign.selectMechanicFirst": "Selecciona un mecanico antes de enviar el SMS.",
+    "assign.smsConsentRequired": "El SMS esta desactivado hasta registrar el consentimiento del tecnico en Configuracion.",
     // Admin Settings - extra
     "admin.settings.phoneNumber": "Número Telefónico",
     "admin.settings.joinDate": "Fecha de Incorporación (AAAA-MM-DD)",

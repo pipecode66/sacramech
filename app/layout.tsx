@@ -10,8 +10,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: 'Rapi Mobile Mechanic | Mobile Mechanic Services',
-  description: 'Professional mobile mechanic services in Sacramento. We come to you! Book your appointment today.',
-  generator: 'v0.app',
+  description: 'Appointment-based mobile vehicle diagnostics across approved California service areas. Rapi Mobile Mechanic comes to you.',
   icons: {
     icon: '/rapi-logo.jpeg',
     apple: '/rapi-logo.jpeg',

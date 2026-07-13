@@ -20,6 +20,7 @@ interface SuccessStepProps {
     vehicleMake: string
     vehicleModel: string
     serviceType: string
+    smsConsent: boolean
     smsWarnings?: string[]
   }
   onNewBooking: () => void
@@ -117,6 +118,9 @@ export function SuccessStep({ bookingDetails, onNewBooking }: SuccessStepProps) 
                 <div>
                   <p className="text-sm text-muted-foreground">{t("success.phone")}</p>
                   <p className="font-medium">{bookingDetails.phone}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {bookingDetails.smsConsent ? t("success.smsOptedIn") : t("success.smsNotOptedIn")}
+                  </p>
                 </div>
               </div>
             </div>

@@ -23,15 +23,16 @@ Create a local `.env` file with:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-VEHICLE_REGISTRATION_API_USERNAME=
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_PHONE_NUMBER=
+ADMIN_BOOKING_SMS_NUMBER=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is required for the review API and moderation actions.
-`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` are required to send mechanic assignment SMS notifications.
-`VEHICLE_REGISTRATION_API_USERNAME` enables automatic plate lookups for California license plates.
+`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` are required for SMS notifications.
+`ADMIN_BOOKING_SMS_NUMBER` is the opted-in business number that receives new appointment alerts.
+Customer SMS messages require optional consent in the booking form, and mechanic assignment messages require recorded technician consent.
 
 ## Development
 
@@ -58,4 +59,5 @@ pnpm build
 Use the SQL scripts in `scripts/` to create or update the Supabase schema.
 - Reviews depend on `scripts/005-create-reviews-table.sql` (or the updated `scripts/004-full-setup.sql`).
 - Persistent mechanic settings/assignments depend on `scripts/007-create-technicians-table.sql` (or the updated `scripts/004-full-setup.sql`).
+- Auditable customer and technician SMS consent depends on `scripts/011-add-sms-consent-records.sql` (or the updated `scripts/004-full-setup.sql`).
 

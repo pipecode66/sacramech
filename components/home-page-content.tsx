@@ -2,12 +2,14 @@
 
 import { useEffect, useRef } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Header } from "@/components/header"
 import { BookingFlow } from "@/components/booking/booking-flow"
 import { ReviewsSection } from "@/components/reviews/reviews-section"
 import { useI18n } from "@/lib/i18n"
-import { Star, FileText, Wrench, ShieldCheck, DollarSign } from "lucide-react"
+import { Star, FileText, Wrench, ShieldCheck, DollarSign, Phone, MapPin } from "lucide-react"
 import type { ApprovedReviewsPayload } from "@/lib/review-service"
+import { BUSINESS_PHONE_DISPLAY, BUSINESS_PHONE_E164 } from "@/lib/business"
 
 interface HomePageContentProps {
   initialReviews: ApprovedReviewsPayload
@@ -177,12 +179,56 @@ export function HomePageContent({ initialReviews, serviceZipCodes }: HomePageCon
           </div>
         </section>
 
+        <section id="business-information" className="border-t bg-background py-16">
+          <div className="container mx-auto px-4">
+            <div className="mx-auto mb-10 max-w-3xl text-center">
+              <p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-primary">{t("business.eyebrow")}</p>
+              <h2 className="text-2xl font-bold text-foreground sm:text-3xl">{t("business.title")}</h2>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">{t("business.description")}</p>
+            </div>
+
+            <div className="mx-auto grid max-w-5xl gap-4 md:grid-cols-3">
+              <div className="rounded-xl border bg-card p-5">
+                <Phone className="mb-4 h-7 w-7 text-primary" />
+                <h3 className="font-semibold text-foreground">{t("business.contactTitle")}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t("business.contactDescription")}</p>
+                <a href={`tel:${BUSINESS_PHONE_E164}`} className="mt-3 inline-block font-semibold text-primary underline underline-offset-4">
+                  {BUSINESS_PHONE_DISPLAY}
+                </a>
+              </div>
+
+              <div className="rounded-xl border bg-card p-5">
+                <Wrench className="mb-4 h-7 w-7 text-primary" />
+                <h3 className="font-semibold text-foreground">{t("business.servicesTitle")}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t("business.servicesDescription")}</p>
+              </div>
+
+              <div className="rounded-xl border bg-card p-5">
+                <MapPin className="mb-4 h-7 w-7 text-primary" />
+                <h3 className="font-semibold text-foreground">{t("business.areaTitle")}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t("business.areaDescription")}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </main>
 
       <footer className="bg-card border-t py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Rapi Mobile Mechanic. {t("footer.rights")}</p>
           <p className="text-sm mt-2">{t("footer.serving")}</p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
+            <a href={`tel:${BUSINESS_PHONE_E164}`} className="font-medium text-primary underline underline-offset-2">
+              {t("footer.contact")} {BUSINESS_PHONE_DISPLAY}
+            </a>
+            <Link href="/privacy-policy" className="font-medium text-primary underline underline-offset-2">
+              {t("footer.privacy")}
+            </Link>
+            <Link href="/terms-of-service" className="font-medium text-primary underline underline-offset-2">
+              {t("footer.terms")}
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

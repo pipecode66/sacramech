@@ -8,6 +8,7 @@ import { parseStoredAddress } from "@/lib/address-display"
 import { geocodeAddressForDistance } from "@/lib/server-geocode"
 import { isServiceZipCode } from "@/lib/service-zip-codes"
 import { sendTwilioSms } from "@/lib/twilio"
+import { BUSINESS_NAME, SMS_CONSENT_SOURCE, SMS_CONSENT_VERSION } from "@/lib/business"
 
 export const runtime = "nodejs"
 
@@ -29,6 +30,8 @@ const appointmentSchema = z.object({
   engineType: z.string().trim().max(60),
   serviceType: z.string().trim().min(1).max(240),
   referralSource: z.string().trim().max(120).optional().or(z.literal("")),
+  smsConsent: z.boolean(),
+  smsConsentLocale: z.enum(["en", "es"]),
 })
 
 function formatTimeSlot(hour: number) {
@@ -46,13 +49,14 @@ function buildCustomerSms(input: z.infer<typeof appointmentSchema>, appointmentD
   const timeLabel = formatTimeSlot(appointmentDate.getHours())
 
   return [
-    "Rapi Mobile Mechanic",
+    BUSINESS_NAME,
     `Hi ${input.firstName}, your appointment is booked.`,
     `Vehicle: ${vehicle}`,
     `Service: ${input.serviceType}`,
     `Date: ${format(appointmentDate, "MM/dd/yyyy")} (${timeLabel})`,
     `Location: ${input.address}`,
     "We will contact you shortly to confirm details.",
+    "Message frequency varies. Msg & data rates may apply. Reply HELP for help or STOP to opt out.",
   ].join("\n")
 }
 
@@ -69,7 +73,7 @@ function buildAdminSms(input: z.infer<typeof appointmentSchema>, appointmentDate
   ].join("\n")
 }
 
-function getSmsWarning(label: "Customer" | "Admin", error: unknown) {
+function getSmsWarning(label: "Customer", error: unknown) {
   const detail = error instanceof Error ? error.message : "Unknown Twilio error."
   return `${label} SMS could not be sent: ${detail}`
 }
@@ -124,42 +128,51 @@ export async function POST(request: Request) {
       engine_type: input.engineType,
       service_type: input.serviceType,
       referral_source: input.referralSource || null,
+      sms_consent: input.smsConsent,
+      sms_consent_at: input.smsConsent ? new Date().toISOString() : null,
+      sms_consent_source: input.smsConsent ? SMS_CONSENT_SOURCE : null,
+      sms_consent_version: input.smsConsent ? SMS_CONSENT_VERSION : null,
+      sms_consent_locale: input.smsConsent ? input.smsConsentLocale : null,
     }
 
-    let { data, error } = await supabaseAdmin
-      .from("appointments")
-      .insert(appointmentPayload)
-      .select("id")
-      .single()
+    let insertPayload: Record<string, string | number | boolean | null> = { ...appointmentPayload }
+    let consentRecorded = true
+    let data: { id: string } | null = null
+    let error: { message: string } | null = null
 
-    if (error && /latitude|longitude/i.test(error.message)) {
-      const legacyPayload = {
-        first_name: appointmentPayload.first_name,
-        last_name: appointmentPayload.last_name,
-        email: appointmentPayload.email,
-        phone: appointmentPayload.phone,
-        zip_code: appointmentPayload.zip_code,
-        address: appointmentPayload.address,
-        additional_info: appointmentPayload.additional_info,
-        appointment_date: appointmentPayload.appointment_date,
-        appointment_time: appointmentPayload.appointment_time,
-        status: appointmentPayload.status,
-        vehicle_year: appointmentPayload.vehicle_year,
-        vehicle_make: appointmentPayload.vehicle_make,
-        vehicle_model: appointmentPayload.vehicle_model,
-        engine_type: appointmentPayload.engine_type,
-        service_type: appointmentPayload.service_type,
-        referral_source: appointmentPayload.referral_source,
-      }
-
-      const retryResult = await supabaseAdmin
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const insertResult = await supabaseAdmin
         .from("appointments")
-        .insert(legacyPayload)
+        .insert(insertPayload)
         .select("id")
         .single()
 
-      data = retryResult.data
-      error = retryResult.error
+      data = insertResult.data
+      error = insertResult.error
+
+      if (!error) break
+
+      if (/sms_consent/i.test(error.message) && "sms_consent" in insertPayload) {
+        const {
+          sms_consent: _smsConsent,
+          sms_consent_at: _smsConsentAt,
+          sms_consent_source: _smsConsentSource,
+          sms_consent_version: _smsConsentVersion,
+          sms_consent_locale: _smsConsentLocale,
+          ...payloadWithoutConsent
+        } = insertPayload
+        insertPayload = payloadWithoutConsent
+        consentRecorded = false
+        continue
+      }
+
+      if (/latitude|longitude/i.test(error.message) && ("latitude" in insertPayload || "longitude" in insertPayload)) {
+        const { latitude: _latitude, longitude: _longitude, ...payloadWithoutCoordinates } = insertPayload
+        insertPayload = payloadWithoutCoordinates
+        continue
+      }
+
+      break
     }
 
     if (error || !data) {
@@ -167,26 +180,34 @@ export async function POST(request: Request) {
     }
 
     const warnings: string[] = []
-    const adminPhone = process.env.ADMIN_BOOKING_SMS_NUMBER?.trim() || "9166069236"
+    const adminPhone = process.env.ADMIN_BOOKING_SMS_NUMBER?.trim()
 
-    try {
-      await sendTwilioSms({
-        to: input.phone,
-        body: buildCustomerSms(input, appointmentDate),
-      })
-    } catch (smsError) {
-      console.error("Error sending customer booking SMS:", smsError)
-      warnings.push(getSmsWarning("Customer", smsError))
+    if (input.smsConsent && consentRecorded) {
+      try {
+        await sendTwilioSms({
+          to: input.phone,
+          body: buildCustomerSms(input, appointmentDate),
+        })
+      } catch (smsError) {
+        console.error("Error sending customer booking SMS:", smsError)
+        warnings.push(getSmsWarning("Customer", smsError))
+      }
+    } else if (input.smsConsent && !consentRecorded) {
+      console.error("Customer SMS skipped because SMS consent columns are missing from appointments.")
+      warnings.push("Customer SMS could not be sent because consent could not be recorded.")
     }
 
-    try {
-      await sendTwilioSms({
-        to: adminPhone,
-        body: buildAdminSms(input, appointmentDate),
-      })
-    } catch (smsError) {
-      console.error("Error sending admin booking SMS:", smsError)
-      warnings.push(getSmsWarning("Admin", smsError))
+    if (adminPhone) {
+      try {
+        await sendTwilioSms({
+          to: adminPhone,
+          body: buildAdminSms(input, appointmentDate),
+        })
+      } catch (smsError) {
+        console.error("Error sending admin booking SMS:", smsError)
+      }
+    } else {
+      console.warn("Admin booking SMS skipped because ADMIN_BOOKING_SMS_NUMBER is not configured.")
     }
 
     revalidatePath("/admin/dashboard")

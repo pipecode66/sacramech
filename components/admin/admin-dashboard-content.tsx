@@ -48,6 +48,8 @@ interface Technician {
   join_date: string | null
   availability?: string | null
   specialties?: string[] | null
+  sms_consent?: boolean | null
+  sms_consent_at?: string | null
 }
 
 interface AdminDashboardContentProps {

@@ -6,10 +6,12 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { User, ArrowLeft } from "lucide-react"
-import { useI18n } from "@/lib/i18n"
+import Link from "next/link"
+import { useI18n, type Locale } from "@/lib/i18n"
 
 const referralKeys = [
   "details.referral.google",
@@ -25,17 +27,34 @@ const referralKeys = [
 ] as const
 
 interface PersonalDetailsStepProps {
-  onNext: (details: { firstName: string; lastName: string; email: string; phone: string; referralSource: string }) => void
+  initialDetails: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    referralSource: string
+    smsConsent: boolean
+  }
+  onNext: (details: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    referralSource: string
+    smsConsent: boolean
+    smsConsentLocale: Locale
+  }) => void
   onBack: () => void
 }
 
-export function PersonalDetailsStep({ onNext, onBack }: PersonalDetailsStepProps) {
-  const { t } = useI18n()
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [referralSource, setReferralSource] = useState("")
+export function PersonalDetailsStep({ initialDetails, onNext, onBack }: PersonalDetailsStepProps) {
+  const { locale, t } = useI18n()
+  const [firstName, setFirstName] = useState(initialDetails.firstName)
+  const [lastName, setLastName] = useState(initialDetails.lastName)
+  const [email, setEmail] = useState(initialDetails.email)
+  const [phone, setPhone] = useState(initialDetails.phone)
+  const [referralSource, setReferralSource] = useState(initialDetails.referralSource)
+  const [smsConsent, setSmsConsent] = useState(initialDetails.smsConsent)
 
   const isValid = firstName.trim() && lastName.trim() && email.trim() && phone.trim() && referralSource
 
@@ -53,7 +72,7 @@ export function PersonalDetailsStep({ onNext, onBack }: PersonalDetailsStepProps
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (isValid) {
-      onNext({ firstName, lastName, email, phone, referralSource })
+      onNext({ firstName, lastName, email, phone, referralSource, smsConsent, smsConsentLocale: locale })
     }
   }
 
@@ -113,6 +132,37 @@ export function PersonalDetailsStep({ onNext, onBack }: PersonalDetailsStepProps
               value={phone}
               onChange={(e) => handlePhoneChange(e.target.value)}
             />
+            <p className="text-xs leading-relaxed text-muted-foreground">{t("details.phoneHelper")}</p>
+          </div>
+
+          <div className="rounded-xl border border-primary/25 bg-primary/[0.035] p-4">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="smsConsent"
+                checked={smsConsent}
+                onCheckedChange={(checked) => setSmsConsent(checked === true)}
+                aria-describedby="sms-consent-disclosure"
+                className="mt-0.5 h-5 w-5"
+              />
+              <div id="sms-consent-disclosure" className="space-y-2">
+                <Label htmlFor="smsConsent" className="cursor-pointer text-sm font-semibold leading-5">
+                  {t("details.smsConsentTitle")}
+                </Label>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("details.smsConsentDisclosure")}
+                </p>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("details.smsConsentLegalPrefix")}{" "}
+                  <Link href="/privacy-policy" target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-2">
+                    {t("footer.privacy")}
+                  </Link>{" "}
+                  {t("details.smsConsentLegalAnd")}{" "}
+                  <Link href="/terms-of-service" target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-2">
+                    {t("footer.terms")}
+                  </Link>.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

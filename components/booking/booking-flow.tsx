@@ -9,6 +9,7 @@ import { MapConfirmationStep } from "./map-confirmation-step"
 import { PersonalDetailsStep } from "./personal-details-step"
 import { DateSelectionStep } from "./date-selection-step"
 import { SuccessStep } from "./success-step"
+import type { Locale } from "@/lib/i18n"
 
 type Step = "zip" | "vehicle" | "service" | "address" | "map" | "details" | "date" | "success"
 
@@ -30,6 +31,8 @@ interface BookingData {
   email: string
   phone: string
   referralSource: string
+  smsConsent: boolean
+  smsConsentLocale: Locale
   date: Date | null
   smsWarnings: string[]
 }
@@ -61,6 +64,8 @@ export function BookingFlow({
     email: "",
     phone: "",
     referralSource: "",
+    smsConsent: false,
+    smsConsentLocale: "en",
     date: null,
     smsWarnings: [],
   })
@@ -95,7 +100,15 @@ export function BookingFlow({
     setStep("details")
   }
 
-  const handleDetailsNext = (details: { firstName: string; lastName: string; email: string; phone: string; referralSource: string }) => {
+  const handleDetailsNext = (details: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    referralSource: string
+    smsConsent: boolean
+    smsConsentLocale: Locale
+  }) => {
     setBookingData((prev) => ({ ...prev, ...details }))
     setStep("date")
   }
@@ -126,6 +139,8 @@ export function BookingFlow({
           engineType: bookingData.engineType,
           serviceType: bookingData.serviceType,
           referralSource: bookingData.referralSource,
+          smsConsent: bookingData.smsConsent,
+          smsConsentLocale: bookingData.smsConsentLocale,
         }),
       })
 
@@ -170,6 +185,8 @@ export function BookingFlow({
       email: "",
       phone: "",
       referralSource: "",
+      smsConsent: false,
+      smsConsentLocale: "en",
       date: null,
       smsWarnings: [],
     })
@@ -260,6 +277,14 @@ export function BookingFlow({
       )}
       {step === "details" && (
         <PersonalDetailsStep
+          initialDetails={{
+            firstName: bookingData.firstName,
+            lastName: bookingData.lastName,
+            email: bookingData.email,
+            phone: bookingData.phone,
+            referralSource: bookingData.referralSource,
+            smsConsent: bookingData.smsConsent,
+          }}
           onNext={handleDetailsNext}
           onBack={() => setStep("map")}
         />
@@ -285,6 +310,7 @@ export function BookingFlow({
             vehicleMake: bookingData.vehicleMake,
             vehicleModel: bookingData.vehicleModel,
             serviceType: bookingData.serviceType,
+            smsConsent: bookingData.smsConsent,
             smsWarnings: bookingData.smsWarnings,
           }}
           onNewBooking={handleNewBooking}
